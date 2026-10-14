@@ -171,7 +171,7 @@
   form { display: grid; gap: .9rem; }
   .giris form { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) 25rem; gap: 0 2rem; padding: 1.2rem 1.5rem 1.3rem; }
   .form-sol, .form-sag { display: grid; align-content: space-between; gap: .6rem; min-width: 0; }
-  /* Başlat düğmesi; üyenin bilgileri formda kaldıysa solunda "Temizle" */
+  /* Başlat düğmesi; solunda formu boşaltan "Temizle" */
   .baslat { display: flex; gap: .6rem; }
   .baslat .ana-btn { flex: 1; }
   .baslat .ikincil-btn { padding: 0 1.2rem; font-size: 1.05rem; }
@@ -888,8 +888,8 @@
             </div>
           </div>
           <div class="baslat">
-            <!-- Yalnızca üyenin bilgileri formda kaldığında görünür (bkz. bilgileriKalsinMi) -->
-            <button class="ikincil-btn" id="temizleBtn" type="button" hidden>Temizle</button>
+            <!-- Formu boşaltır: üyenin bilgileri formda kaldıysa ve sıradaki kişi başkaysa (bkz. bilgileriKalsinMi) -->
+            <button class="ikincil-btn" id="temizleBtn" type="button">Temizle</button>
             <button class="ana-btn" type="submit">Yarışa başla <kbd>Enter</kbd></button>
           </div>
         </div>
@@ -1503,7 +1503,6 @@ $('temizleBtn').addEventListener('click', () => {
   $('girisForm').reset();
   bolumleriDoldur();
   $('girisUyari').textContent = '';
-  $('temizleBtn').hidden = true;
   $('ad').focus();
 });
 
@@ -1549,7 +1548,6 @@ function giriseDon(kalsin) {
       $('bolumYeniSatir').hidden = false;
     }
   }
-  $('temizleBtn').hidden = !kalsin;
   $('girisUyari').textContent = '';
   $('logoIsik').className = 'logo-isik';
   $('logoIsik').style.setProperty('--p', 100);
