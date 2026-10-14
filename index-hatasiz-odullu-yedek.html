@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YMT Logoyu Kodla</title>
+<style>
+  /* TASARIM: topluluk logosunun lacivert-mavi paletinden türeyen bir yarış panosu.
+     - Zemin koyu lacivert; tek ışık kaynağı logonun arkasında, logodan dışa ince halkalar yayılır.
+     - Paneller opak ve düz: ince çizgi, yumuşak gölge. Neon parlama ve renk geçişli yazı yok.
+     - Renk anlam taşır: mavi = marka ve odak, altın = lider ve ödül, yeşil/kırmızı = doğru/yanlış tuş.
+     - Başlık ve rakamlar Bahnschrift (Windows'la gelir), metin Segoe UI, kod Cascadia Code ya da Consolas.
+       İnternet gerekmesin diye font indirilmez; listedeki ilk kurulu font kullanılır. */
+  :root {
+    color-scheme: dark;
+    --zemin: #060b18;
+    --panel: #0d162b;
+    --panel-2: #152242;                          /* panel içindeki kutular ve seçili öğeler */
+    --kod-zemin: #070d1c;
+    --cizgi: rgba(151, 181, 235, .16);
+    --cizgi-belirgin: rgba(151, 181, 235, .32);
+    --mavi: #5aa7ff;                             /* vurgu: odak, etkin satır, imleç */
+    --marka: #1f57dc;                            /* logonun mavisi: düğme, başlık şeridi, sonuç kartı */
+    --marka-koyu: #0f2f93;
+    --buz: #a9e4f8;                              /* logonun açık mavisi */
+    --yazi: #eef3fb;
+    --soluk: #8c9bb7;
+    --dogru: #4fd896;                            /* doğru yazılan karakter */
+    --yanlis: #ff5f66;                           /* yanlış tuş, azalan süre */
+    --altin: #f3c04a;
+    --gumus: #c7d1df;
+    --bronz: #dc8f55;
+    --baslik-font: 'Bahnschrift', 'DIN Alternate', 'Segoe UI', system-ui, sans-serif;
+    --yazi-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --kod-font: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+    --yumusak: cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* Tüm ölçüler rem: ekran 1366×768 de olsa 1920×1080 de olsa aynı oranda büyür */
+  html { font-size: clamp(13px, min(1.05vw, 1.85vh), 26px); }
+
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: rgba(151, 181, 235, .3) transparent; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    color: var(--yazi);
+    font-family: var(--yazi-font); font-size: 1.1rem;
+    /* Logonun durduğu yerde mavi bir ışık (--isik-x/y logonun merkezi), sağ altta onun yansıması */
+    --isik-x: 13.9rem; --isik-y: 51%;
+    background:
+      radial-gradient(42rem 36rem at var(--isik-x) var(--isik-y), rgba(36, 96, 228, .36), transparent 70%),
+      radial-gradient(56rem 28rem at 96% 112%, rgba(22, 63, 160, .3), transparent 70%),
+      var(--zemin);
+  }
+  body.giriste { --isik-x: 17.15rem; --isik-y: 40%; }
+
+  h1, h2, p, ol, dl, dd { margin: 0; }
+  h1, h2 { font-family: var(--baslik-font); }
+  ol { padding: 0; list-style: none; }
+
+  :focus-visible { outline: .14rem solid var(--mavi); outline-offset: .18rem; }
+
+  /* ---------- Panel ---------- */
+  .giris form, .gosterge, .kod-kutu, .liderlik, .modal-kutu {
+    background: var(--panel);
+    border: 1px solid var(--cizgi);
+    border-radius: .7rem;
+    box-shadow: 0 1.4rem 2.6rem -1.6rem rgba(0, 0, 0, .8);
+  }
+
+  /* Küçük etiket */
+  dt, th, .etiket, .alan {
+    font-size: .76rem; font-weight: 600;
+    letter-spacing: .09em; text-transform: uppercase;
+    color: var(--soluk);
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 25rem;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 1.2rem;
+    height: 100vh;
+    padding: 1.1rem 1.4rem 1.4rem;
+  }
+
+  /* ---------- Üst şerit ---------- */
+  .ust { grid-column: 1 / -1; display: flex; align-items: center; gap: .9rem; padding: 0 .2rem .8rem; border-bottom: 1px solid var(--cizgi); }
+  .ust-logo { width: 2.8rem; height: 2.8rem; }
+  .ust-logo.universite { padding: .14rem; background: #fff; border-radius: 50%; }   /* mavi çizgili logo koyu zeminde okunsun diye beyaz daire içinde */
+  .ust-ad { flex: 1; display: flex; align-items: baseline; gap: 1rem; }
+  .ust h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: .07em; line-height: 1; text-transform: uppercase; }
+  .ust p { color: var(--soluk); font-size: .95rem; }
+
+  /* ---------- Sahne ----------
+     Oyunda: solda logo, ortada editör. Logo iki panelin arasında değil, ekranın açık kenarında durur.
+     Girişte (body.giriste): üstte tanıtım (büyük logo, yanında başlık), altta boydan boya kayıt şeridi. */
+  .sahne { display: grid; grid-template-columns: 25rem minmax(0, 1fr); gap: 1.8rem; min-height: 0; }
+  .logo-sutun { grid-column: 1; grid-row: 1; }
+  .oyun { grid-column: 2; grid-row: 1; }
+  /* Tanıtım (logo + yazı) sahnenin ortasında durur: logonun solunda ve yazının sağında birer boşluk,
+     ikisinin arasında geniş bir ara. Kayıt şeridi sahnenin tam genişliğindedir. */
+  .giriste .sahne { grid-template-columns: 29.5rem minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 1.4rem 5.5rem; }
+  .giriste .logo-sutun { margin-left: 2rem; }
+
+  .tanitim, .giris form, .oyun { animation: gir .45s var(--yumusak) both; }
+  .giris form { animation-delay: .08s; }
+
+  /* ---------- Giriş ---------- */
+  .giris { display: contents; }   /* tanıtım ve form sahnenin ızgarasına ayrı ayrı yerleşir */
+  .tanitim { grid-column: 2; grid-row: 1; align-self: center; min-width: 0; margin-right: 1.5rem; }
+  .tanitim h2 { position: relative; font-size: 4.8rem; font-weight: 700; line-height: 1; letter-spacing: -.01em; }
+  .tanitim h2 em { display: block; font-style: normal; color: var(--buz); }
+  /* Başlığın kenar ışığı: yazının kenar çizgili kopyası tam üstünde durur ve bir maskeyle gizlidir;
+     maskedeki dar açıklık soldan sağa geçerken harflerin kenarları sırayla parlar.
+     paint-order: çizgi dolgunun altında kalır, yalnızca harfin dışına taşan yarısı görünür
+     (yoksa K, y gibi harflerde iç içe geçen parçaların çizgileri harfin içinde belirir). */
+  .baslik-isik {
+    position: absolute; inset: -1rem; padding: 1rem;   /* kutu yazıdan 1rem geniş: maske parlamayı kenarda kesmesin */
+    -webkit-text-stroke: .15rem var(--buz);
+    paint-order: stroke fill;
+    filter: drop-shadow(0 0 .35rem rgba(169, 228, 248, .95));
+    -webkit-mask: linear-gradient(100deg, transparent 42%, #000 48.5%, #000 51.5%, transparent 58%) 90% 0 / 300% 100% no-repeat;
+            mask: linear-gradient(100deg, transparent 42%, #000 48.5%, #000 51.5%, transparent 58%) 90% 0 / 300% 100% no-repeat;
+    animation: baslikIsik 6s ease-in-out infinite;
+    pointer-events: none; user-select: none;
+  }
+  .baslik-isik em { -webkit-text-stroke-color: #fff; }
+  .giris-aciklama { max-width: 31rem; margin-top: .9rem; color: #a7b4cd; font-size: 1.25rem; line-height: 1.45; }
+  /* Ödül sponsoru: logosu ve ödül cümlesi (yalnızca SPONSOR_ADI doluyken görünür) */
+  .sponsor-odul {
+    display: flex; align-items: center; gap: 1.1rem;
+    width: fit-content; max-width: 100%; margin-top: 1.2rem;
+    padding: .5rem 1.3rem .5rem .5rem;
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid var(--cizgi-belirgin); border-radius: .6rem;
+  }
+  .sponsor-odul img { height: 3.7rem; border-radius: .35rem; }
+  .sponsor-odul > span { display: grid; gap: .3rem; min-width: 0; }
+  .sponsor-odul .etiket { color: var(--altin); }
+  .sponsor-odul b { font: 700 1.3rem/1.15 var(--baslik-font); }
+  /* Sponsor varken ödül yukarıda yazar; "İlk 3 kişiye ödül" rakamı onu tekrar etmesin */
+  .sponsorlu .kunye .altin { display: none; }
+  /* Oyunun rakamları: süre, satır, ödüller */
+  .kunye { display: flex; margin-top: 1.3rem; }
+  .kunye div { display: flex; flex-direction: column-reverse; gap: .4rem; padding: 0 1rem; white-space: nowrap; border-left: 1px solid var(--cizgi-belirgin); }
+  .kunye dt { letter-spacing: .06em; }
+  .kunye div:first-child { padding-left: 0; border-left: 0; }
+  .kunye dd { font: 700 2.7rem/1 var(--baslik-font); font-variant-numeric: tabular-nums; }
+  .kunye .altin dd { color: var(--altin); }
+  .kunye .yesil dd { color: var(--dogru); }
+  /* Meydan okuma: geçilecek en iyi sonuç */
+  .meydan {
+    display: flex; align-items: baseline; gap: .8rem;
+    width: fit-content; max-width: 100%; margin-top: 1.2rem;
+    padding: .65rem 1.1rem .6rem .9rem;
+    font-size: 1.15rem;
+    background: rgba(243, 192, 74, .08);
+    border: 1px solid rgba(243, 192, 74, .38); border-left: .3rem solid var(--altin);
+    border-radius: .5rem;
+  }
+  .meydan .etiket { color: var(--altin); }
+  .meydan b { font: 700 1.55rem/1 var(--baslik-font); font-variant-numeric: tabular-nums; color: var(--altin); }
+  .meydan b:empty { display: none; }
+  .meydan span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Kayıt şeridi: solda alanlar ve uyarı, sağda üyelik ve başlat düğmesi */
+  form { display: grid; gap: .9rem; }
+  .giris form { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) 25rem; gap: 0 2rem; padding: 1.2rem 1.5rem 1.3rem; }
+  .form-sol, .form-sag { display: grid; align-content: space-between; gap: .6rem; min-width: 0; }
+  label { display: grid; gap: .35rem; color: var(--soluk); font-size: 1rem; }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: .6rem .8rem;
+    font: inherit; font-size: 1.3rem;
+    color: var(--yazi);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--cizgi-belirgin); border-radius: .45rem;
+  }
+  input[type="text"]:focus, input[type="password"]:focus { outline: none; border-color: var(--mavi); box-shadow: 0 0 0 .2rem rgba(90, 167, 255, .2); }
+
+  /* Form alanları: etiket üstte, değer altta; odaklanan alanın çerçevesi ve etiketi mavi olur */
+  /* Üst sırada ad, soyad, numara; alt sırada e-posta ve bölüm. Bölüm elle yazılacaksa alt sıra
+     üçe bölünür ve "Bölümünün adı" alanı açılır. */
+  .alanlar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .7rem; }
+  .alan.yarim { grid-column: span 3; }
+  .alanlar:has(#bolumYeniSatir:not([hidden])) .yarim { grid-column: span 2; }
+  .alan {
+    grid-column: span 2;
+    gap: .1rem;
+    padding: .55rem .9rem .5rem;
+    background: rgba(255, 255, 255, .035);
+    border: 1px solid var(--cizgi); border-radius: .5rem;
+    transition: color .15s, border-color .15s, background .15s, box-shadow .15s;
+  }
+  .alan:hover { border-color: var(--cizgi-belirgin); }
+  .alan:focus-within { color: var(--mavi); background: rgba(90, 167, 255, .07); border-color: var(--mavi); box-shadow: 0 0 0 .2rem rgba(90, 167, 255, .16); }
+  .alan input[type="text"], .alan select {
+    width: 100%;
+    padding: .1rem 0;
+    font: 500 1.35rem/1.3 var(--yazi-font);
+    letter-spacing: 0; text-transform: none;
+    color: var(--yazi);
+    background: transparent;
+    border: 0; border-radius: 0; outline: 0; box-shadow: none;
+  }
+  .alan select {
+    appearance: none;
+    padding-right: 1.5rem;
+    text-overflow: ellipsis;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238c9bb7' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right center / .9rem;
+  }
+  .alan #no { font-family: var(--kod-font); font-size: 1.25rem; letter-spacing: .05em; }
+  .alan #eposta { font-size: 1.15rem; line-height: 1.53; }   /* uzun adresler sığsın; satır yüksekliği öbür alanlarla aynı */
+  ::placeholder { color: rgba(140, 155, 183, .55); }
+  option { color: var(--yazi); background: #101a33; }
+
+  /* Üyelik: karekod, yanında üye kutusu ve açıklamalar */
+  .uyelik { display: flex; align-items: center; gap: 1.2rem; min-width: 0; }
+  .uyelik > div:last-child { display: grid; gap: .3rem; }
+  .onay { display: flex; align-items: center; gap: .7rem; font-size: 1.2rem; font-weight: 600; color: var(--yazi); cursor: pointer; }
+  .onay input {
+    appearance: none;
+    display: grid; place-content: center;
+    width: 1.5rem; height: 1.5rem; margin: 0;
+    background: rgba(255, 255, 255, .04);
+    border: .1rem solid var(--cizgi-belirgin); border-radius: .3rem;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .onay:hover input { border-color: var(--mavi); }
+  .onay input:checked { background: var(--marka); border-color: var(--mavi); }
+  .onay input:checked::after {
+    content: '';
+    width: .8rem; height: .42rem;
+    border: solid #fff; border-width: 0 0 .2rem .2rem;
+    transform: translateY(-.1rem) rotate(-45deg);
+  }
+  .onay-not { color: var(--soluk); font-size: .95rem; line-height: 1.3; }
+
+  /* Üyelik karekodu: dosyası (KAREKOD_SRC) yüklenirse görünür */
+  .karekod {
+    flex: none;
+    display: grid; justify-items: center; gap: .4rem;
+    width: 10rem;
+    font-size: .95rem; font-weight: 600; line-height: 1.25; text-align: center;
+  }
+  .karekod img { width: 100%; padding: .4rem; background: #fff; border-radius: .5rem; }
+  .uyelik .karekod { width: 6.6rem; }
+  .uyelik .karekod img { padding: .25rem; }
+
+  .uyari { min-height: 1.5em; color: var(--yanlis); font-size: 1.08rem; font-weight: 600; }
+
+  button { font: inherit; cursor: pointer; }
+  .ana-btn {
+    display: flex; align-items: center; justify-content: center; gap: .9rem;
+    padding: .9rem 1.6rem;
+    font: 700 1.3rem/1.2 var(--baslik-font); letter-spacing: .07em; text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(#2d69ef, var(--marka));
+    border: 1px solid #4b82f6; border-radius: .5rem;
+    box-shadow: 0 .9rem 1.6rem -1rem rgba(31, 87, 220, .95), inset 0 1px 0 rgba(255, 255, 255, .22);
+    transition: transform .12s, filter .12s;
+  }
+  .ana-btn:hover, .ana-btn:focus-visible { transform: translateY(-.08rem); filter: brightness(1.12); }
+  .ana-btn:active { transform: translateY(.04rem); filter: brightness(.94); }
+  .ana-btn:disabled { opacity: .45; cursor: default; transform: none; filter: none; }
+  /* Giriş ekranındaki başlat düğmesinin çerçevesinde dönen ışık: göz düğmeye gitsin diye.
+     Sonuç kartındaki çerçeveyle aynı yöntem: dönen renk geçişinin yalnızca kenarı görünür. */
+  .giris .ana-btn { position: relative; animation: isikDon 3.6s linear infinite; }
+  .giris .ana-btn::before {
+    content: '';
+    position: absolute; inset: -.2rem;
+    padding: .16rem;
+    border-radius: .68rem;
+    background: conic-gradient(from var(--aci), transparent 0 62%, var(--buz) 80%, #fff 90%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* Düğmenin klavye kısayolu */
+  kbd {
+    padding: .12rem .5rem;
+    font: 600 .8rem var(--yazi-font); letter-spacing: .03em; text-transform: none;
+    color: rgba(255, 255, 255, .9);
+    background: rgba(0, 0, 0, .2);
+    border: 1px solid rgba(255, 255, 255, .32); border-radius: .3rem;
+  }
+  .ikincil-btn {
+    padding: .5rem 1.1rem;
+    font-size: .95rem; font-weight: 600;
+    color: var(--yazi);
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid var(--cizgi-belirgin); border-radius: .45rem;
+    transition: background .15s, border-color .15s;
+  }
+  .ikincil-btn:hover { background: rgba(255, 255, 255, .1); border-color: var(--soluk); }
+  .ikincil-btn[data-onay] { color: #fff; background: rgba(255, 95, 102, .2); border-color: var(--yanlis); }
+  .ikincil-btn.kucuk { padding: .3rem .6rem; font-size: .88rem; }
+  .ikincil-btn:disabled { opacity: .55; cursor: default; }
+  .ikincil-btn.gonderildi { color: var(--dogru); border-color: rgba(79, 216, 150, .5); }   /* kartı e-postayla gönderilmiş kayıt */
+
+  /* ---------- Oyun ---------- */
+  .oyun { display: flex; flex-direction: column; gap: .8rem; min-height: 0; }
+
+  /* Gösterge: süre, yarışmacı, hata */
+  .gosterge { display: flex; align-items: stretch; overflow: hidden; }
+  .olcu { display: grid; align-content: center; gap: .3rem; padding: .7rem 1.2rem; border-right: 1px solid var(--cizgi); }
+  .olcu:first-child { background: linear-gradient(rgba(45, 105, 239, .22), rgba(31, 87, 220, .06)); }
+  .olcu.genis { flex: 1; min-width: 0; }
+  .sure { font: 700 3.3rem/1 var(--baslik-font); font-variant-numeric: tabular-nums; }
+  .azaldi .sure { color: var(--yanlis); }
+  /* Uzun adlar iki satıra bölünür, daha uzunu kesilir */
+  .oyuncu {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 1.3rem; font-weight: 600; line-height: 1.2;
+  }
+  .hata-sayaci { min-width: 2ch; font: 700 2.2rem/1 var(--baslik-font); font-variant-numeric: tabular-nums; }
+  .hata-sayaci.var { color: var(--yanlis); }
+  .gosterge .ikincil-btn { align-self: center; margin: 0 1rem; }
+
+  /* Süre çubuğu: kalan süre kadar dolu; son 10 saniyede kızarır */
+  .sinir { height: .35rem; overflow: hidden; background: rgba(255, 255, 255, .08); border-radius: 1rem; }
+  .sinir-dolu { height: 100%; background: var(--mavi); border-radius: 1rem; transform-origin: left; }
+  .azaldi .sinir-dolu { background: var(--yanlis); }
+
+  /* Lidere karşı durum satırı */
+  .yaris { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; min-height: 1.9rem; }
+  .yaris-durum { font-size: 1.25rem; font-weight: 600; white-space: nowrap; }
+  .yaris-durum.geride { color: var(--altin); }
+  .yaris-durum.onde { color: var(--dogru); }
+  .yaris-lider { min-width: 0; color: var(--soluk); font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .yaris-lider:not(:empty)::before {
+    content: '';
+    display: inline-block; width: 1em; height: .22em; margin-right: .5em;
+    vertical-align: middle;
+    background: var(--altin);
+  }
+
+  /* Kod paneli: editör. Yazarken (.yaziyor) çerçevesi mavileşir, yanlış tuşta (.salla) titrer. */
+  .kod-kutu {
+    flex: 1; min-height: 0;
+    overflow: hidden auto;   /* uzun bir satır çıktısı yatay kaydırma açmasın, kenarda kesilsin */
+    padding: 0 1.2rem 1rem 0;
+    background: var(--kod-zemin);
+    transition: border-color .2s;
+  }
+  .kod-kutu.yaziyor { border-color: rgba(90, 167, 255, .55); }
+  .kod-kutu.salla { animation: salla .24s linear; }
+  .kod-ust {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; justify-content: space-between;
+    margin: 0 -1.2rem .6rem 0;
+    color: var(--soluk); font-family: var(--kod-font); font-size: .9rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--cizgi);
+  }
+  .kod-ust span { padding: .55rem 1.2rem; }
+  /* Açık dosyanın sekmesi */
+  .kod-ust .dosya { color: var(--yazi); background: var(--kod-zemin); border-right: 1px solid var(--cizgi); box-shadow: inset 0 .14rem 0 var(--mavi); }
+  .kod {
+    font-family: var(--kod-font); font-size: 1.35rem; line-height: 2;
+    font-variant-ligatures: none;   /* her karakter ayrı renklendiği için bitişik harf kullanılmaz */
+    white-space: pre;
+    counter-reset: satir;
+    user-select: none; cursor: default;
+  }
+  .satir { counter-increment: satir; min-height: 2em; border-left: .22rem solid transparent; }
+  .satir::before {
+    content: counter(satir, decimal-leading-zero);
+    display: inline-block; width: 2.5em; margin-right: .9em; padding-right: .7em;
+    text-align: right;
+    color: rgba(140, 155, 183, .45);
+    border-right: 1px solid var(--cizgi);
+  }
+  .satir.aktif { background: rgba(90, 167, 255, .09); border-left-color: var(--mavi); }
+  .satir.aktif::before { color: var(--mavi); }
+  /* Çalışan satırın çıktısı */
+  .cikti { display: inline-block; margin-left: 1em; font-family: var(--yazi-font); font-size: .74em; font-weight: 600; color: var(--buz); opacity: 0; }
+  .satir.tamam .cikti { opacity: 1; animation: ciktiGir .3s var(--yumusak); }
+  .satir.tamam .cikti::before {
+    content: '';
+    display: inline-block; width: 1.4em; height: 1px; margin-right: .6em;
+    vertical-align: middle;
+    background: currentColor;
+  }
+
+  /* Tek tek karakterler: bekleyen = silik, doğru = yeşil (basılınca hafifçe büyür), yanlış = kırmızı */
+  .h { display: inline-block; line-height: 1.3; color: #7385a6; border-radius: .12em; }
+  .h.enter { margin-left: .25em; color: rgba(140, 155, 183, .3); }
+  .h.dogru { color: var(--dogru); animation: harfVur .16s ease-out; }
+  .h.enter.dogru { color: rgba(79, 216, 150, .4); }
+  /* Hayalet: liderin aynı saniyede bulunduğu karakter */
+  .h.hayalet { background: rgba(243, 192, 74, .2); box-shadow: inset 0 -.14em 0 var(--altin); }
+  .h.imlec {
+    color: #fff;
+    background: rgba(90, 167, 255, .3);
+    box-shadow: inset 0 -.14em 0 var(--mavi);
+    animation: imlec 1s steps(2, jump-none) infinite;
+  }
+  .h.yanlis {
+    color: #fff;
+    background: rgba(255, 95, 102, .5);
+    box-shadow: inset 0 -.14em 0 var(--yanlis);
+    animation: none;
+  }
+
+  .ipucu { min-height: 1.5em; color: var(--soluk); font-size: 1.1rem; }
+  .ipucu.hata { color: var(--yanlis); font-weight: 600; }
+
+  /* Boşta gösteri: oyun göstergeleri gizlenir, davet yazısı çıkar */
+  .davet { display: none; }
+  .davet h2 { font-size: 4.4rem; font-weight: 700; letter-spacing: .03em; line-height: 1; text-transform: uppercase; }
+  .davet p { margin-top: .6rem; color: var(--buz); font-size: 1.25rem; animation: davet 1.4s ease-in-out infinite alternate; }
+  .gosteride .davet { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+  .gosteride .gosterge, .gosteride .sinir, .gosteride .yaris, .gosteride .ipucu { display: none; }
+
+  /* ---------- Logo ----------
+     Yazdıkça aşağıdan yukarı dolar (--p), çevresindeki kadranın çentikleri yanar ve arkasındaki
+     ışık büyür. Oyun sırasında (.kuruluyor) gri ve bulanık başlar; çalışan satırlar PROGRAM'daki
+     efekt adını .logo-isik'e sınıf olarak ekler. */
+  .logo-sutun { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.3rem; min-width: 0; }
+  .logo-isik {
+    --p: 100; --gri: 0; --bulanik: 0rem; --parlak: 1;
+    position: relative; width: 19rem; aspect-ratio: 1; margin: 2.5rem 0 1.5rem;   /* kadran %12,5 dışa taşar */
+  }
+  .giriste .logo-isik { width: 22rem; margin: 0; }
+  /* Giriş ekranında logo kendini baştan kurar: boşalır, aşağıdan yukarı dolar, çentikler sırayla yanar,
+     sonra bir süre tamamlanmış hâliyle durur. Tek bir animasyon --p'yi sürer; dolum, çentikler, dolum
+     çizgisi ve arkadaki ışık ona bağlı olduğu için hepsi birlikte hareket eder. */
+  .giriste .logo-isik { animation: logoKur 11s ease-in-out infinite; }
+  .giriste .logo-isik::before { opacity: calc(.3 + var(--p) * .007); transform: scale(calc(.8 + var(--p) * .002)); }
+  .giriste .logo-seviye { animation: seviyeGor 11s linear infinite; }
+  /* Oyundaki gibi: gri ve bulanık dolar, tamamlanınca renklenip netleşir */
+  .giriste .logo-dolu { animation: logoRenk 11s linear infinite; }
+  /* --p animasyonla her karede değişirken geçişler onu geriden izlemesin */
+  .giriste .logo-isik::before, .giriste .logo-dolu, .giriste .logo-seviye, .giriste .k-yay { transition: none; }
+  /* Dalga: logodan dışa yayılıp sönen halka (yalnızca giriş ekranında; panellerin altında kalır) */
+  .dalga {
+    position: absolute; z-index: -1; inset: 0;
+    border: 1px solid rgba(169, 228, 248, .75); border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .giriste .dalga { animation: dalga 5s ease-out infinite; }
+  .giriste .dalga + .dalga { animation-delay: 2.5s; }
+  /* Oyun başında logo gri, bulanık ve sönüktür. 'renk' efekti griyi, 'net' bulanıklığı kaldırır,
+     'parlat' logoyu aydınlatır: her biri ancak kendi satırı çalışınca olur. */
+  .logo-isik.kuruluyor { --gri: 1; --bulanik: .3rem; }
+  .logo-isik.kuruluyor.renk { --gri: 0; }
+  .logo-isik.kuruluyor.net { --bulanik: 0rem; }
+  .logo-isik.kuruluyor.parlat { --parlak: 1.14; }
+  /* Işık: logonun ardında. Oyunda yazdıkça büyür ama kısık kalır; 'parlat' efektiyle açılıp nefes alır. */
+  .logo-isik::before {
+    content: '';
+    position: absolute; inset: -20%;
+    border-radius: 50%;
+    background: radial-gradient(circle closest-side, rgba(70, 138, 255, .6), rgba(70, 138, 255, .2) 55%, transparent);
+    transition: transform .4s ease-out, opacity .4s ease-out;
+  }
+  .logo-isik.kuruluyor::before { opacity: calc(var(--p) * .0045); transform: scale(calc(.5 + var(--p) * .004)); }
+  .logo-isik.kuruluyor.parlat::before { animation: nefes 1.5s ease-in-out infinite alternate; }
+  /* Halkalar: logodan dışa yayılan ince çemberler. Panellerin altında kalır, boşluklarda görünür. */
+  .logo-isik::after {
+    content: '';
+    position: absolute; z-index: -1; left: 50%; top: 50%;
+    width: 600%; height: 600%; margin: -300% 0 0 -300%;   /* ölçüler logoya oranlı: logo büyüyünce halkalar da açılır */
+    border-radius: 50%;
+    background: repeating-radial-gradient(circle closest-side, transparent 0 calc(6.5% - 1px), rgba(151, 181, 235, .13) calc(6.5% - 1px) 6.5%);
+    -webkit-mask-image: radial-gradient(circle closest-side, transparent 23%, #000 23.5%, transparent);
+            mask-image: radial-gradient(circle closest-side, transparent 23%, #000 23.5%, transparent);
+    pointer-events: none;
+  }
+
+  /* Kadran: eksen çizgileri ve 100 çentik; maskedeki yay (--p) kadar çentik parlar */
+  .kadran { position: absolute; inset: -12.5%; width: 125%; height: 125%; overflow: visible; }
+  .kadran circle, .kadran line { fill: none; }
+  .k-eksen { stroke: rgba(151, 181, 235, .3); stroke-width: .6; stroke-dasharray: 9 3 1.5 3; }
+  .k-cember { stroke: rgba(151, 181, 235, .3); stroke-width: .6; }
+  .k-tik { stroke: rgba(151, 181, 235, .38); stroke-width: 6; stroke-dasharray: .22 .78; stroke-dashoffset: .11; }
+  .k-ana { stroke-width: 12; stroke-dasharray: .4 9.6; stroke-dashoffset: .2; }
+  .k-parlak .k-tik { stroke: var(--buz); }
+  .k-yay { stroke: #fff; stroke-width: 18; stroke-dasharray: var(--p) 100; transition: stroke-dasharray .3s ease-out; }
+  /* Tarama: giriş ekranında kadranın çevresinde dönen kısa yay; altına gelen çentikler beyaz ve kalın görünür */
+  .k-tarama { stroke: #fff; stroke-width: 22; stroke-dasharray: 7 93; }
+  .k-isikli { opacity: 0; }
+  .k-isikli .k-tik { stroke: #fff; stroke-width: 9; }
+  .k-isikli .k-ana { stroke-width: 15; }
+  .giriste .k-isikli { opacity: 1; }
+  .giriste .k-tarama { transform-origin: 125px 125px; animation: tara 4.5s linear infinite; }
+
+  .logo-halka {
+    position: absolute; inset: -1.8%;
+    border: 1px dashed rgba(151, 181, 235, .5); border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: border-color .4s;
+  }
+  .kuruluyor .logo-halka { opacity: 1; }
+  .kuruluyor.halka .logo-halka { border: .14rem solid var(--buz); }
+  .logo-halka.nabiz { animation: nabiz .45s ease-out; }
+
+  .logo-daire { position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; }
+  .logo-daire.dondur { animation: don .9s cubic-bezier(.5, 0, .3, 1); }
+  .logo-daire img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .logo-soluk { opacity: .1; filter: blur(.12rem); }
+  .kuruluyor .logo-soluk { opacity: 0; }
+  .kuruluyor.belir .logo-soluk { opacity: .12; animation: belir-logo .9s ease-out; }
+  .logo-ikili {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    font-family: var(--kod-font); font-size: 1.1rem; line-height: 1.35;
+    letter-spacing: .22em; word-break: break-all; text-align: center;
+    color: var(--buz);
+    opacity: 0;
+    transition: opacity .5s;
+  }
+  .kuruluyor.ikili .logo-ikili { opacity: .4; }
+  .kuruluyor.ikili .logo-ikili div { animation: ikiliAk 12s linear infinite; }
+  .logo-dolu {
+    clip-path: inset(calc(100% - var(--p) * 1%) 0 0 0);
+    opacity: calc(.4 + var(--p) * .006);
+    filter: grayscale(var(--gri)) blur(var(--bulanik)) brightness(var(--parlak));
+    transition: clip-path .3s ease-out, opacity .3s ease-out, filter .6s ease-out;
+  }
+  /* Dolum çizgisi */
+  .logo-seviye {
+    position: absolute; left: 0; right: 0; bottom: calc(var(--p) * 1%);
+    height: .12rem;
+    background: #fff;
+    box-shadow: 0 0 .5rem .08rem rgba(169, 228, 248, .8);
+    opacity: 0;
+    transition: bottom .3s ease-out;
+  }
+  .logo-isik.dolum .logo-seviye { opacity: 1; }
+
+  /* Yüzde: logonun altında, iki yanında ince çizgilerle */
+  .yuzde {
+    display: flex; align-items: center; gap: .9rem;
+    width: 21rem;
+    font: 700 2.8rem/1 var(--baslik-font);
+    font-variant-numeric: tabular-nums;
+  }
+  .yuzde::before, .yuzde::after { content: ''; flex: 1; height: 1px; background: var(--cizgi-belirgin); }
+
+  /* Bölüm çekişmesi: liderlik tablosunun altında ilk iki bölümün puanları; çubuğun mavi kısmı
+     öndeki bölümün payıdır */
+  .cekisme { margin-top: .8rem; padding-top: .9rem; font-size: 1.02rem; border-top: 1px solid var(--cizgi); }
+  .cekisme .etiket { display: block; margin-bottom: .55rem; }
+  .cekisme-satir { display: flex; justify-content: space-between; gap: 1rem; font-weight: 600; }
+  .cekisme-satir span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cekisme-satir b { font-variant-numeric: tabular-nums; }
+  .cekisme-on { color: var(--mavi); }
+  .cekisme-arka { color: var(--altin); }
+  .cekisme-cubuk { height: .5rem; margin: .4rem 0; overflow: hidden; background: var(--altin); border-radius: 1rem; }
+  .cekisme-cubuk div { height: 100%; background: var(--mavi); border-right: .2rem solid var(--zemin); transition: width .6s ease-out; }
+  .cekisme p { margin-top: .3rem; color: var(--soluk); font-size: .95rem; text-align: center; }
+
+  /* Program bitince logonun olduğu yerden bir kez çakan ışık */
+  .flas {
+    position: fixed; inset: 0; z-index: 5;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--isik-x) var(--isik-y), rgba(220, 238, 255, .9), rgba(90, 167, 255, .3) 30%, transparent 62%);
+    opacity: 0;
+  }
+  .flas.calis { animation: flas .8s ease-out; }
+
+  /* ---------- Liderlik tablosu ---------- */
+  .liderlik { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 0 1.2rem 1rem; }
+  /* Başlık şeridi: logonun mavisi, sağında logodaki halkalar */
+  .liderlik h2 {
+    margin: 0 -1.2rem; padding: 1.05rem 1.3rem 1rem;
+    font-size: 1.35rem; font-weight: 700; letter-spacing: .1em; line-height: 1; text-transform: uppercase;
+    color: #fff;
+    background:
+      linear-gradient(90deg, var(--marka-koyu) 38%, rgba(15, 47, 147, 0) 90%),
+      repeating-radial-gradient(circle at 100% 50%, transparent 0 calc(.8rem - 1px), rgba(255, 255, 255, .16) calc(.8rem - 1px) .8rem),
+      linear-gradient(90deg, var(--marka-koyu), var(--marka));
+  }
+  /* Ödül sponsoru: başlığın hemen altında ince bir şerit */
+  .sponsor-satir {
+    display: flex; align-items: center; gap: .7rem;
+    margin: 0 -1.2rem; padding: .55rem 1.3rem;
+    font-size: 1rem;
+    background: rgba(243, 192, 74, .07);
+    border-bottom: 1px solid var(--cizgi);
+  }
+  .sponsor-satir .etiket { flex: none; color: var(--altin); }
+  .sponsor-satir img { flex: none; height: 2.2rem; border-radius: .25rem; }
+  .sponsor-satir b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Sekmeler: genel sıralama, bölümler ve hatasızlar. Yönetim panelindeki süzgeçler de aynı görünür. */
+  .sekmeler, .suzgecler { display: flex; gap: .25rem; padding: .25rem; background: rgba(0, 0, 0, .28); border: 1px solid var(--cizgi); border-radius: .55rem; }
+  .sekmeler { margin-top: 1rem; }
+  .sekme, .suzgec {
+    flex: 1; padding: .4rem .3rem;
+    font-size: 1rem; font-weight: 600;
+    color: var(--soluk);
+    background: transparent;
+    border: 0; border-radius: .38rem;
+    transition: color .15s, background .15s;
+  }
+  .suzgec { padding-inline: 1.1rem; }
+  .sekme:hover, .suzgec:hover { color: var(--yazi); }
+  .sekme.secili, .suzgec.secili { color: #fff; background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--cizgi-belirgin); }
+  .liderlik-sayi { min-height: 1.4em; margin-top: .7rem; color: var(--soluk); font-size: .95rem; }
+  .siralama { flex: 1; min-height: 0; overflow: hidden auto; margin-top: .5rem; padding: .2rem .2rem .3rem; }   /* yatay: satırlar yandan girerken kaydırma çubuğu belirmesin */
+  .siralama li {
+    display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+    align-items: center; gap: .8rem;
+    padding: .55rem .8rem;
+    border-bottom: 1px solid var(--cizgi);
+    font-size: 1.1rem;
+  }
+  /* Giriş ve gösteri ekranlarında tablo her yenilendiğinde (sekme değişince) satırlar sırayla yerine oturur */
+  .giriste .siralama li, .gosteride .siralama li { animation: satirGir .45s var(--yumusak) both; animation-delay: calc(var(--i) * 55ms); }
+  .siralama .no { font: 600 1.05em var(--baslik-font); font-variant-numeric: tabular-nums; color: var(--soluk); }
+  .siralama .isim { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .siralama .skor { font-family: var(--kod-font); font-size: .92em; font-variant-numeric: tabular-nums; }
+
+  /* İlk üç: altın, gümüş, bronz. Sol kenarı madalya renginde, zemini o renge çalan plakalar;
+     birinci en büyüğü. */
+  .siralama .odul {
+    --madalya: var(--altin);
+    grid-template-columns: 3.3rem minmax(0, 1fr); row-gap: .1rem;   /* ad üstte, sonuç altta: uzun adlar kesilmesin */
+    margin-bottom: .55rem; padding: .7rem .9rem .7rem .8rem;
+    font-size: 1.25rem; font-weight: 600;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--madalya) 17%, var(--panel-2)), var(--panel-2) 62%);
+    border: 1px solid color-mix(in srgb, var(--madalya) 32%, transparent);
+    border-left: .3rem solid var(--madalya);
+    border-radius: .5rem;
+  }
+  .siralama .sira-1 { padding-block: .95rem; font-size: 1.45rem; }
+  .siralama .sira-2 { --madalya: var(--gumus); }
+  .siralama .sira-3 { --madalya: var(--bronz); }
+  .siralama .hatasiz { --madalya: var(--dogru); }   /* hatasız ödülünün sahibi */
+  .siralama .odul .no { grid-row: 1 / span 2; font-size: 2.3rem; font-weight: 700; line-height: 1; color: var(--madalya); }
+  .siralama .sira-1 .no { font-size: 2.8rem; }
+  .siralama .odul .skor { grid-column: 2; font-size: .78em; color: var(--madalya); }
+  /* Bölüm satırları: ad üstte, puan ve oyuncu sayısı altta */
+  .siralama .iki-satir { grid-template-columns: 2.6rem minmax(0, 1fr); row-gap: .1rem; }
+  .siralama .odul.iki-satir { grid-template-columns: 3.3rem minmax(0, 1fr); }
+  .siralama .iki-satir .no { grid-row: 1 / span 2; }
+  .siralama .iki-satir .skor { grid-column: 2; font-family: var(--yazi-font); }
+  .siralama .yeni { outline: .12rem solid var(--mavi); outline-offset: .08rem; border-radius: .5rem; }
+  /* O an oynayan oyuncunun satırı: en iyi ihtimalle gireceği sırada durur, süre geçtikçe aşağı iner */
+  .siralama .canli { outline: .12rem dashed var(--mavi); outline-offset: .08rem; border-radius: .5rem; }
+  .bos { margin-top: 1.2rem; color: var(--soluk); font-size: 1.1rem; line-height: 1.45; }
+
+  /* ---------- Pop-up'lar ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 10;
+    display: grid; place-items: center;
+    background: rgba(3, 6, 14, .82);
+    animation: solukGir .25s ease-out;
+  }
+  .modal-kutu {
+    max-width: 92vw; max-height: 92vh; overflow: auto;
+    padding: 1.8rem 2.2rem 2rem;
+    text-align: center;
+    box-shadow: 0 2.5rem 5rem -1.5rem #000;
+    animation: gir .4s var(--yumusak) both;
+  }
+  .modal-kutu h2 { font-size: 2.1rem; font-weight: 700; line-height: 1.1; }
+
+  /* ---------- Sonuç ekranı ----------
+     Ortada dikey (9:16) bir skor kartı durur: oyuncu telefonuyla fotoğrafını çekip story'de
+     paylaşsın diye. Kart buzlu camdır, kenarında bir ışık döner, arkasında kod yağmuru akar
+     (#yagmur). Not ve düğme kartın sağındadır; fotoğrafa girmez.
+     Arayüzün geri kalanı sakin; parlama ve hareket bilerek yalnızca bu ekranda var. */
+  @property --aci { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+  /* --p: logonun doluluk yüzdesi (0-100). Sayı olarak tanımlı ki giriş ekranındaki animasyon onu sürebilsin. */
+  @property --p { syntax: '<number>'; inherits: true; initial-value: 100; }
+
+  .sonuc { background: rgba(4, 8, 20, .88); }
+  .yagmur { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sonuc-duzen { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2.6rem; width: 100%; }
+
+  .kart {
+    /* Kenarda dönen ışığın renkleri; --aci dönüş açısıdır ve aşağıdaki iki çerçeveye de geçer */
+    --isik: conic-gradient(from var(--aci),
+      rgba(90, 167, 255, .28), var(--buz) 12%, #fff 17%, rgba(90, 167, 255, .28) 34%,
+      rgba(90, 167, 255, .28) 50%, var(--mavi) 63%, var(--buz) 68%, rgba(90, 167, 255, .28) 84%);
+    position: relative; grid-column: 2;
+    height: min(46rem, 88vh); aspect-ratio: 9 / 16;
+    background: rgba(9, 18, 42, .62);
+    -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+    border-radius: 1.4rem;
+    /* Kart ekranın derinliğinden dönerek gelir; ışık çerçevede sürekli döner */
+    animation: kartGel 1s cubic-bezier(.16, 1, .3, 1) both, isikDon 5s linear infinite;
+  }
+  /* Kartın içeriği: tamamı bu tuvale çizilir (bkz. kartiCiz), indirilen görselle birebir aynıdır.
+     Tuvalin zemini şeffaftır; arkasındaki buzlu cam görünür. */
+  .kart canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
+  /* Işıklı çerçeve: dönen renk geçişinin yalnızca kenar kalınlığı kadarı görünür, içi maskelenir */
+  .kart::before, .kart-isik i {
+    content: '';
+    position: absolute; inset: 0;
+    padding: .14rem;
+    border-radius: inherit;
+    background: var(--isik);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .kart::before { z-index: 1; }   /* tuvalin üstünde kalsın */
+  /* Aynı çerçevenin bulanık kopyası: ışığın karttan dışarı taşan parıltısı */
+  .kart-isik { position: absolute; inset: 0; border-radius: inherit; filter: blur(.7rem); pointer-events: none; }
+  .kart-isik i { padding: .4rem; }
+  /* Hologram parıltısı: kartın üstünden ara ara geçen çapraz ışık */
+  .kart::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    border-radius: inherit;
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .13) 50%, transparent 58%) 130% 0 / 300% 100% no-repeat;
+    animation: parilti 5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  /* Kartın sağı: çağrı, not ve düğme */
+  .sonuc-yan {
+    grid-column: 3; justify-self: start;
+    display: grid; gap: 1rem;
+    width: 24rem; padding: 1.4rem 1.5rem 1.5rem;
+    background: var(--panel);
+    border: 1px solid var(--cizgi); border-radius: .7rem;
+    animation: gir .5s .6s var(--yumusak) both;
+  }
+  .sonuc-yan .ana-btn { padding-inline: 1rem; font-size: 1.15rem; white-space: nowrap; }
+  .sonuc-yan .ikincil-btn { padding: .7rem 1rem; font-size: 1.05rem; }
+  .sonuc-cek { font: 700 1.55rem/1.2 var(--baslik-font); }
+  .sonuc-not { color: var(--soluk); font-size: 1.08rem; line-height: 1.5; }
+  .sonuc-kalir { color: var(--buz); font-size: 1rem; line-height: 1.4; }
+
+  .yonetim-kutu { max-width: 98vw; padding-inline: 1.3rem; text-align: left; }   /* geniş tablo yatay kaydırmasız sığsın */
+  .yonetim-kutu form { min-width: 22rem; margin-top: 0; }
+  .dugmeler { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+  .panel-ust { display: flex; align-items: center; gap: 1.6rem; margin-bottom: 1rem; }
+  .panel-ust .dugmeler { margin-left: auto; }
+  /* Yedek şeridi: solda yedeğin durumu, sağda yedek ve geri alma düğmeleri */
+  .yedek-serit {
+    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+    margin-bottom: .8rem; padding: .55rem .9rem;
+    background: rgba(255, 255, 255, .035);
+    border: 1px solid var(--cizgi); border-radius: .5rem;
+  }
+  .yedek-serit p { color: var(--soluk); font-size: .92rem; line-height: 1.4; }
+  .yedek-serit .dugmeler { flex: none; flex-wrap: nowrap; }
+  .panel-not { color: var(--soluk); font-size: .95rem; }
+  .panel-not:not(:empty), .panel-durum:not(:empty) { margin-bottom: .6rem; }
+  .panel-durum { color: var(--dogru); font-size: .95rem; font-weight: 600; }
+  .panel-durum.hata { color: var(--yanlis); }
+  .tablo-kap { max-height: 58vh; overflow: auto; }
+  table { border-collapse: collapse; font-size: .93rem; }
+  th, td { padding: .5rem .45rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--cizgi); }
+  tr.odullu td { background: rgba(79, 216, 150, .1); }                       /* hatasız ödülünü alan satır */
+  tr.odullu td:first-child { box-shadow: inset .25rem 0 0 var(--dogru); }
+  th { position: sticky; top: 0; background: #101b34; border-bottom-color: var(--cizgi-belirgin); }
+  td:nth-child(3), td:nth-child(5) { font-family: var(--kod-font); }
+  td:nth-child(10) { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }   /* e-posta */
+  td .ikincil-btn + .ikincil-btn { margin-left: .3rem; }
+  td input[type="text"] { min-width: 15rem; padding: .3rem .5rem; font-size: 1rem; }   /* bölüm düzeltme kutusu */
+
+  /* Animasyonlar: kısa ve tek seferlik; sürekli dönenler yalnızca imleç, davet yazısı ve biten logonun ışığı */
+  @keyframes gir { from { opacity: 0; transform: translateY(1.2rem); } }
+  @keyframes solukGir { from { opacity: 0; } }
+  @keyframes harfVur { from { transform: scale(1.35); } }
+  @keyframes imlec { from { background: rgba(90, 167, 255, .3); } to { background: rgba(90, 167, 255, .08); } }
+  @keyframes salla {
+    0%, 70% { border-color: var(--yanlis); }
+    20% { transform: translateX(-.3rem); } 45% { transform: translateX(.24rem); } 70% { transform: translateX(-.12rem); }
+  }
+  @keyframes ciktiGir { from { opacity: 0; transform: translateX(-.6rem); } }
+  @keyframes nabiz { 40% { transform: scale(1.07); } }
+  @keyframes don { to { transform: rotate(360deg); } }
+  @keyframes belir-logo { 0% { opacity: 0; } 35% { opacity: .6; } }
+  @keyframes ikiliAk { to { transform: translateY(-50%); } }
+  @keyframes nefes { from { opacity: .75; transform: scale(1); } to { opacity: 1; transform: scale(1.22); } }
+  @keyframes flas { 0% { opacity: 0; } 18% { opacity: .6; } 100% { opacity: 0; } }
+  @keyframes davet { from { opacity: .5; } to { opacity: 1; } }
+  @keyframes kartGel {
+    from { opacity: 0; transform: perspective(60rem) translateZ(-55rem) rotateY(-55deg) rotateX(24deg); }
+    55%  { opacity: 1; }
+    to   { transform: perspective(60rem) translateZ(0) rotateY(0) rotateX(0); }
+  }
+  @keyframes isikDon { to { --aci: 360deg; } }
+  /* Giriş ekranının hareketleri */
+  @keyframes logoKur { 0%, 5% { --p: 0; } 34%, 93% { --p: 100; } 100% { --p: 0; } }
+  @keyframes seviyeGor { 0%, 4% { opacity: 0; } 7%, 32% { opacity: 1; } 36%, 100% { opacity: 0; } }
+  @keyframes tara { to { transform: rotate(360deg); } }
+  @keyframes dalga { from { transform: scale(1.26); opacity: .6; } to { transform: scale(2.7); opacity: 0; } }
+  @keyframes baslikIsik { 0%, 30% { -webkit-mask-position: 90% 0; mask-position: 90% 0; } 78%, 100% { -webkit-mask-position: 10% 0; mask-position: 10% 0; } }
+  @keyframes logoRenk {
+    0%, 31% { filter: grayscale(1) blur(.22rem) brightness(.9); }
+    35% { filter: grayscale(0) blur(0) brightness(1.35); }
+    42%, 92% { filter: grayscale(0) blur(0) brightness(1); }
+    100% { filter: grayscale(1) blur(.22rem) brightness(.9); }
+  }
+  @keyframes satirGir { from { opacity: 0; transform: translateX(.9rem); } }
+  @keyframes parilti { 0%, 45% { background-position: 130% 0; } 100% { background-position: -30% 0; } }
+
+  /* Dar pencerede (stant dışı) bozulmasın diye alt alta dizilir */
+  @media (max-width: 900px) {
+    body { height: auto; overflow: auto; }
+    .app, .sahne { display: block; height: auto; }
+    .app > * + *, .sahne > * + * { margin-top: 1.2rem; }
+    .logo-isik::after { display: none; }
+    .logo-sutun, .giriste .logo-sutun { margin: 2rem auto; }
+    .tanitim { margin-right: 0; }
+    .logo-isik, .giriste .logo-isik { width: 14rem; }
+    .tanitim h2 { font-size: 2.8rem; }
+    .giris form { grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+    .alanlar { grid-template-columns: minmax(0, 1fr); }
+    .alanlar .alan { grid-column: auto; }
+    .sure { font-size: 2.6rem; }
+    .sonuc { overflow: auto; }
+    .sonuc-duzen { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 1.2rem 0; }
+    .kart, .sonuc-yan { grid-column: 1; justify-self: center; }
+  }
+</style>
+</head>
+<body class="giriste">
+
+<div class="app">
+  <!-- ÜST ŞERİT -->
+  <header class="ust">
+    <img class="ust-logo" data-logo alt="YMT logosu">
+    <div class="ust-ad">
+      <h1>Logoyu Kodla</h1>
+      <p>Yazılım Mühendisliği Topluluğu</p>
+    </div>
+    <p>Bandırma Onyedi Eylül Üniversitesi</p>
+    <!-- Üniversitenin logosu: dosyası (UNIVERSITE_LOGO_SRC) yüklenirse görünür -->
+    <img class="ust-logo universite" id="universiteLogo" alt="Bandırma Onyedi Eylül Üniversitesi logosu" hidden>
+  </header>
+
+  <main class="sahne">
+    <!-- 1) GİRİŞ EKRANI: üstte tanıtım (büyük logonun yanında), altta boydan boya kayıt şeridi -->
+    <section class="giris" id="giris">
+      <div class="tanitim">
+        <h2>
+          <span>Kodu yaz, <em>logoyu inşa et</em></span>
+          <!-- Aynı yazının kenarı ışıklı kopyası: üzerinden soldan sağa bir ışık geçerken görünür -->
+          <span class="baslik-isik" aria-hidden="true">Kodu yaz, <em>logoyu inşa et</em></span>
+        </h2>
+        <p class="giris-aciklama" id="girisAciklama"></p>
+        <!-- Ödül sponsoru: yalnızca SPONSOR_ADI doluyken görünür -->
+        <p class="sponsor-odul" data-sponsor hidden>
+          <img data-sponsor-logo alt="">
+          <span><span class="etiket">Ödül sponsoru</span><b id="sponsorOdul"></b></span>
+        </p>
+        <dl class="kunye">
+          <div><dt>saniye</dt><dd id="kunyeSure"></dd></div>
+          <div><dt>satır kod</dt><dd id="kunyeSatir"></dd></div>
+          <div class="altin"><dt>kişiye ödül</dt><dd>İlk 3</dd></div>
+          <div class="yesil"><dt>hataya özel ödül</dt><dd>0</dd></div>
+        </dl>
+        <!-- Meydan okuma: geçilecek en iyi sonuç; kayıt yoksa ilk süreyi koymaya çağırır -->
+        <p class="meydan"><span class="etiket">Rekor</span><b id="rekorSonuc"></b><span id="rekorKim"></span></p>
+      </div>
+      <form id="girisForm" autocomplete="off" novalidate>
+        <div class="form-sol">
+          <div class="alanlar">
+            <label class="alan">Ad <input id="ad" type="text" maxlength="30"></label>
+            <label class="alan">Soyad <input id="soyad" type="text" maxlength="30"></label>
+            <label class="alan">Öğrenci numarası <input id="no" type="text" inputmode="numeric" maxlength="15"></label>
+            <!-- E-posta: sonuç kartını oyuncuya sonradan göndermek için (bkz. EPOSTA_ZORUNLU) -->
+            <label class="alan yarim">E-posta (kartın için) <input id="eposta" type="text" inputmode="email" maxlength="80" spellcheck="false" autocapitalize="off"></label>
+            <label class="alan yarim">Bölüm <select id="bolum"></select></label>
+            <!-- Yalnızca listede "Listede yok, yazacağım" seçilince görünür -->
+            <label class="alan" id="bolumYeniSatir" hidden>Bölümünün adı <input id="bolumYeni" type="text" maxlength="40"></label>
+          </div>
+          <p class="uyari" id="girisUyari" role="alert"></p>
+        </div>
+        <div class="form-sag">
+          <div class="uyelik">
+            <!-- Karekod dosyası yüklenirse görünür -->
+            <div class="karekod" hidden><img data-karekod alt="Üyelik karekodu"></div>
+            <div>
+              <label class="onay"><input id="uye" type="checkbox"> Topluluk üyesiyim</label>
+              <p class="onay-not" id="onayNot"></p>
+              <p class="onay-not" data-karekod-yazi hidden>Üye değil misin? Karekodu okut, hemen üye ol.</p>
+            </div>
+          </div>
+          <button class="ana-btn" type="submit">Yarışa başla <kbd>Enter</kbd></button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 2) OYUN EKRANI -->
+    <section class="oyun" id="oyun" hidden>
+      <!-- Yalnızca boşta gösteri sırasında görünür -->
+      <div class="davet">
+        <div>
+          <h2>Sıra sende</h2>
+          <p id="davetYazi"></p>
+        </div>
+        <div class="karekod" hidden><img data-karekod alt="Üyelik karekodu"><span>Üye ol, ikinci hakkını kap</span></div>
+      </div>
+      <div class="gosterge">
+        <div class="olcu"><span class="etiket">Süre</span><div class="sure" id="sure">00:00.000</div></div>
+        <div class="olcu genis"><span class="etiket">Yarışmacı</span><div class="oyuncu" id="oyuncuAd"></div></div>
+        <div class="olcu"><span class="etiket">Hata</span><div class="hata-sayaci" id="hataSayaci"></div></div>
+        <button class="ikincil-btn" id="vazgecBtn" type="button" tabindex="-1">Vazgeç</button>
+      </div>
+      <div class="sinir"><div class="sinir-dolu" id="sinirDolu"></div></div>
+      <div class="yaris">
+        <span class="yaris-durum" id="yarisDurum"></span>
+        <span class="yaris-lider" id="yarisLider"></span>
+      </div>
+      <div class="kod-kutu" id="kodKutu">
+        <div class="kod-ust" aria-hidden="true"><span class="dosya">logo.py</span><span>Python</span></div>
+        <div class="kod" id="kod"></div>
+      </div>
+      <p class="ipucu" id="ipucu"></p>
+    </section>
+
+    <!-- 3) LOGO
+         Logo dosyası (logo.png) index.html ile AYNI KLASÖRDE durmalı.
+         Dosya adını değiştirirsen aşağıdaki script'te LOGO_SRC değerini de değiştir.
+         data-logo taşıyan bütün <img>'lere aynı dosya otomatik atanır. -->
+    <aside class="logo-sutun">
+      <div class="logo-isik" id="logoIsik">
+        <!-- Kadran: eksen çizgileri ve ilerledikçe yanan 100 çentik -->
+        <svg class="kadran" viewBox="0 0 250 250" aria-hidden="true">
+          <defs>
+            <mask id="kadranMaske" maskUnits="userSpaceOnUse" x="0" y="0" width="250" height="250">
+              <circle class="k-yay" cx="125" cy="125" r="112" pathLength="100"/>
+            </mask>
+            <!-- Tarama: giriş ekranında kadranın çevresinde dönen kısa yay; altındaki çentikleri aydınlatır -->
+            <mask id="taramaMaske" maskUnits="userSpaceOnUse" x="0" y="0" width="250" height="250">
+              <circle class="k-tarama" cx="125" cy="125" r="112" pathLength="100"/>
+            </mask>
+          </defs>
+          <line class="k-eksen" x1="2" y1="125" x2="248" y2="125"/>
+          <line class="k-eksen" x1="125" y1="2" x2="125" y2="248"/>
+          <circle class="k-cember" cx="125" cy="125" r="121.5"/>
+          <g transform="rotate(-90 125 125)">
+            <circle class="k-tik" cx="125" cy="125" r="109" pathLength="100"/>
+            <circle class="k-tik k-ana" cx="125" cy="125" r="112" pathLength="100"/>
+            <g class="k-parlak" mask="url(#kadranMaske)">
+              <circle class="k-tik" cx="125" cy="125" r="109" pathLength="100"/>
+              <circle class="k-tik k-ana" cx="125" cy="125" r="112" pathLength="100"/>
+            </g>
+            <g class="k-isikli" mask="url(#taramaMaske)">
+              <circle class="k-tik" cx="125" cy="125" r="109" pathLength="100"/>
+              <circle class="k-tik k-ana" cx="125" cy="125" r="112" pathLength="100"/>
+            </g>
+          </g>
+        </svg>
+        <!-- Dalga: giriş ekranında logodan dışa yayılıp sönen iki halka -->
+        <i class="dalga"></i><i class="dalga"></i>
+        <div class="logo-halka" id="logoHalka"></div>
+        <div class="logo-daire" id="logoDaire">
+          <img class="logo-soluk" data-logo alt="">
+          <div class="logo-ikili" aria-hidden="true"><div id="logoIkili"></div></div>
+          <img class="logo-dolu" data-logo alt="YMT logosu">
+          <div class="logo-seviye"></div>
+        </div>
+      </div>
+      <div class="yuzde" id="yuzde" hidden>%0</div>
+    </aside>
+  </main>
+
+  <!-- 4) LİDERLİK TABLOSU -->
+  <aside class="liderlik">
+    <h2>Liderlik tablosu</h2>
+    <!-- Ödül sponsoru: yalnızca SPONSOR_ADI doluyken görünür -->
+    <p class="sponsor-satir" data-sponsor hidden><span class="etiket">Ödül sponsoru</span><img data-sponsor-logo alt=""><b data-sponsor-ad></b></p>
+    <div class="sekmeler">
+      <button class="sekme" type="button" tabindex="-1" data-sekme="genel">Genel</button>
+      <button class="sekme" type="button" tabindex="-1" data-sekme="bolum">Bölümler</button>
+      <button class="sekme" type="button" tabindex="-1" data-sekme="hatasiz">Hatasız</button>
+    </div>
+    <p class="liderlik-sayi" id="liderlikSayi"></p>
+    <p class="bos" id="liderlikBos"></p>
+    <ol class="siralama" id="siralama"></ol>
+    <!-- Bölüm çekişmesi: yalnızca giriş ve gösteri ekranlarında, en az iki bölümün puanı varken görünür -->
+    <div class="cekisme" id="cekisme" hidden>
+      <span class="etiket">Bölüm çekişmesi</span>
+      <div class="cekisme-satir cekisme-on"><span id="cekismeAd1"></span><b id="cekismePuan1"></b></div>
+      <div class="cekisme-cubuk"><div id="cekismeDolu"></div></div>
+      <div class="cekisme-satir cekisme-arka"><span id="cekismeAd2"></span><b id="cekismePuan2"></b></div>
+      <p id="cekismeFark"></p>
+    </div>
+  </aside>
+</div>
+
+<div class="flas" id="flas"></div>
+
+<!-- SONUÇ EKRANI: ortada, telefonla fotoğrafı çekilip story'de paylaşılacak dikey skor kartı.
+     Arkasında kod yağmuru akar. Not ve düğme kartın dışında, sağında durur ki fotoğrafa girmesin. -->
+<div class="modal sonuc" id="sonuc" hidden>
+  <canvas class="yagmur" id="yagmur"></canvas>
+  <div class="sonuc-duzen" role="dialog" aria-modal="true" aria-label="Sonuç kartı">
+    <!-- Kart: içeriği kartiCiz() ile tuvale çizilir; indirilen ve e-postayla giden görselle birebir aynıdır.
+         Çevresindeki cam, dönen ışık ve parıltı CSS'tedir (.kart). -->
+    <div class="kart">
+      <div class="kart-isik" aria-hidden="true"><i></i></div>
+      <canvas id="kartTuval" width="1080" height="1920" role="img"></canvas>
+    </div>
+    <div class="sonuc-yan">
+      <p class="sonuc-cek">Fotoğrafını çek, story'de paylaş</p>
+      <p class="sonuc-kalir">Acele etme: bu ekran aşağıdaki düğmeye basılana kadar kapanmaz.</p>
+      <p class="sonuc-not" id="sonucNot"></p>
+      <!-- Kartın görselini indirir: görevli, isteyen oyuncuya sonradan e-postayla göndermek için kullanır -->
+      <button class="ikincil-btn" id="kartIndirBtn" type="button">Kartı indir</button>
+      <button class="ana-btn" id="sonrakiBtn" type="button">Sıradaki yarışmacı <kbd>Enter</kbd></button>
+    </div>
+  </div>
+</div>
+
+<!-- YÖNETİM PANELİ (giriş ekranındayken F2) -->
+<div class="modal" id="yonetim" hidden>
+  <div class="modal-kutu yonetim-kutu" role="dialog" aria-modal="true" aria-label="Yönetim paneli">
+    <form id="pinForm" autocomplete="off">
+      <h2>Yönetim paneli</h2>
+      <label>PIN <input id="pin" type="password" inputmode="numeric" autocomplete="off"></label>
+      <p class="uyari" id="pinUyari" role="alert"></p>
+      <div class="dugmeler">
+        <button class="ana-btn" type="submit">Paneli aç</button>
+        <button class="ikincil-btn" type="button" data-kapat>Kapat</button>
+      </div>
+    </form>
+    <div id="panel" hidden>
+      <div class="panel-ust">
+        <h2>Kayıtlar</h2>
+        <!-- Süzgeç: tüm kayıtlar, ödül alan ilk üç, hatasız ödülü sıralaması (ilki özel ödülü alır) -->
+        <div class="suzgecler">
+          <button class="suzgec" type="button" data-suzgec="tum">Tümü</button>
+          <button class="suzgec" type="button" data-suzgec="ilk3">İlk 3</button>
+          <button class="suzgec" type="button" data-suzgec="hatasiz">Hatasız</button>
+        </div>
+        <div class="dugmeler">
+          <button class="ikincil-btn" id="csvBtn" type="button">CSV indir</button>
+          <!-- Deneme için: bütün kayıtları silip 10 kişilik test grubunu yükler (bkz. testGrubunuYukle) -->
+          <button class="ikincil-btn" id="testBtn" type="button">Test grubu yükle</button>
+          <button class="ikincil-btn" id="sifirlaBtn" type="button">Tüm kayıtları sil</button>
+          <button class="ikincil-btn" type="button" data-kapat>Kapat</button>
+        </div>
+      </div>
+      <!-- Yedek şeridi: son yedeğin zamanı, elle yedek alma, yedek dosyasından yükleme ve kayıt silen son
+           işlemi geri alma (bkz. script'te "Yedekleme") -->
+      <div class="yedek-serit">
+        <p id="yedekDurum"></p>
+        <div class="dugmeler">
+          <button class="ikincil-btn kucuk" id="geriAlBtn" type="button" hidden>Son işlemi geri al</button>
+          <button class="ikincil-btn kucuk" id="yedekAlBtn" type="button">Yedek al</button>
+          <button class="ikincil-btn kucuk" id="yedekYukleBtn" type="button">Yedekten yükle</button>
+          <input id="yedekDosya" type="file" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <p class="panel-not" id="panelNot"></p>
+      <!-- Kart gönderiminin, yedeklemenin ve geri almanın sonucu burada yazar -->
+      <p class="panel-durum" id="panelDurum" role="status"></p>
+      <div class="tablo-kap">
+        <table>
+          <thead><tr><th>Sıra</th><th>Ad Soyad</th><th>Öğrenci no</th><th>Bölüm</th><th>Sonuç</th><th>WPM</th><th>Hata</th><th>Hak</th><th>Üye</th><th>E-posta</th><th>Tarih</th><th></th></tr></thead>
+          <tbody id="kayitGovde"></tbody>
+        </table>
+      </div>
+      <p class="bos" id="panelBos">Kayıt yok.</p>
+      <datalist id="bolumOneri"></datalist>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   AYARLAR — stant öncesi yalnızca bu bölümü düzenlemen yeterli
+   ===================================================================== */
+
+// PROGRAM: yarışmacıların satır satır yazacağı kod. Her satır Enter'la "çalışır".
+//  - kod:   yazılacak satır. Girintiyi boşlukla yaz; oyuncu girintiyi yazmaz, otomatik geçilir.
+//           Satırın içinde tek tırnak gerekiyorsa \' diye yaz.
+//  - cikti: satır çalışınca yanında beliren yazı. Kısa tut (25-30 harf); uzunu panelin kenarında kesilir.
+//  - efekt: satır çalışınca logoya olan şey (yazmasan da olur). Kullanılabilenler:
+//           'belir'  silik logo görünür        'halka'  çevresine çerçeve çizilir
+//           'ikili'  içinde 0/1'ler akar       'renk'   gri logo renklenir
+//           'net'    bulanıklık gider          'dondur' logo bir tur döner
+//           'parlat' logo parlar
+//    Program bitince eksik kalan efektler kendiliğinden tamamlanır, logo her zaman parlar.
+//  - Türkçe Q klavyede ^ ~ ` yazılamaz; { } [ ] # ise AltGr ister ve oyunu yavaşlatır.
+//  - Programı değiştirirsen eski sürelerle kıyas bozulur: önce F2 panelinden kayıtları sil.
+const PROGRAM = [
+  { kod: 'logo = Logo("YMT")',     cikti: 'Boş ekran korkusu yenildi',       efekt: 'belir' },
+  { kod: 'logo.cerceve_ciz()',     cikti: 'Çerçeve tamam, dokunmayın',       efekt: 'halka' },
+  { kod: 'logo.ikili_kod(0, 1)',   cikti: '0 ve 1 akıyor, 2 kayıp',          efekt: 'ikili' },
+  { kod: 'logo.renk("mavi")',      cikti: 'Mavi geldi, tasarımcı mutlu',     efekt: 'renk' },
+  { kod: 'logo.netlestir()',       cikti: 'Bulanıklık bug değil, özellikti', efekt: 'net' },
+  { kod: 'logo.dondur(360)',       cikti: '360 döndü, yine aynı yerde',      efekt: 'dondur' },
+  { kod: 'logo.kaydet("ymt.png")', cikti: 'ymt_son_final_v2.png' },
+  { kod: 'ymt.katil(sen)',         cikti: 'Hoş geldin, kahveler senden' },
+  { kod: 'logo.parlat()',          cikti: 'Derlendi, çalışıyor, dokunma!',   efekt: 'parlat' },
+];
+
+// SÜRE SINIRI: süre ilk tuşla başlar. Bu kadar saniyede bitiremeyen oyuncunun oyunu biter ve
+// tamamladığı yüzdeyle, bitirenlerin altında sıralanır.
+const SURE_SINIRI_SN = 75;
+
+// HAK SAYISI: bir öğrenci numarası kaç kez yarışabilir. Girişte "Topluluk üyesiyim" kutusunu
+// işaretleyen üye hakkını kullanır (üyeliği stantta görevli kontrol eder). Hak ilk tuşla
+// harcanır; sıralamada öğrencinin en iyi denemesi geçerlidir.
+const HAK_UYE = 2;
+const HAK_UYE_OLMAYAN = 1;
+
+// BÖLÜMLER: giriş ekranındaki bölüm listesinin başlangıcı; kendi üniversitene göre düzenle.
+// Listede olmayan bölümü oyuncu kendisi yazar ve o bölüm sonraki oyuncular için listeye
+// kendiliğinden eklenir. Her oyuncu bölümüne puan kazandırır: yazdığı her %1 için 1 puan,
+// programı bitirdiyse kalan her saniye için +1 puan.
+const BOLUMLER = [
+  'Yazılım Mühendisliği',
+  'Bilgisayar Mühendisliği',
+  'Elektrik-Elektronik Mühendisliği',
+  'Elektrik Mühendisliği',
+];
+
+// SPONSOR: ödülleri veren işletme. Adı ve logosu giriş ekranında, liderlik tablosunda ve
+// sonuç kartında (indirilen ve e-postayla giden kartta da) görünür.
+//  - Sponsor yoksa SPONSOR_ADI'nı boş bırak (''): sponsorla ilgili her şey kendiliğinden gizlenir.
+//  - SPONSOR_ODUL: giriş ekranında ve boşta gösteride yazan ödül cümlesi. Kaç kişinin ödül alacağı
+//    belli olunca buraya yazılabilir (ör. 'İlk 5\'e Goldenfingers\'tan menü').
+//  - Logo dosyanın en altındaki SPONSOR_LOGO satırında gömülüdür (karta basılabilsin diye, KART_LOGO
+//    ile aynı sebepten). Sponsor değişirse o satırın yeni logodan yeniden üretilmesi gerekir.
+const SPONSOR_ADI = 'Goldenfingers';
+const SPONSOR_ODUL = 'Kazananların ödülü Goldenfingers\'tan';
+
+// KART ETİKETLERİ: sonuç kartının altında yazan etiketler ve hesap adı. Oyuncular bunları
+// story'ye yazacağı için hesap adının doğru olduğundan emin ol.
+const KART_ETIKETLERI = ['#YMT2026', '#CodeLikeAPro', '@ymtbanu'];
+
+// ÜYELİK KAREKODU: üyelik formuna giden karekodun görseli. Dosyayı index.html ile aynı klasöre
+// koyarsan giriş ekranında ve boşta gösteri ekranında çıkar; dosya yoksa karekod alanı görünmez.
+const KAREKOD_SRC = 'karekod.png';
+
+// LOGO: index.html ile aynı klasördeki logo dosyasının adı. İndirilen kart görselindeki logo bu
+// dosyadan değil, dosyanın en altındaki gömülü kopyadan (KART_LOGO) gelir.
+const LOGO_SRC = 'logo.png';
+
+// ÜNİVERSİTE LOGOSU: üst şeridin sağında, üniversitenin adının yanında durur. Dosya index.html ile
+// aynı klasörde olmalı; dosya yoksa logo görünmez, yalnızca üniversitenin adı kalır.
+const UNIVERSITE_LOGO_SRC = 'banu-logo.png';
+
+// E-POSTA: girişte sorulur; sonuç kartını oyuncuya sonradan göndermek içindir ve kayıtlarla
+// birlikte CSV'ye yazılır. false: yazmak isteğe bağlı, true: yazmayan yarışamaz.
+const EPOSTA_ZORUNLU = false;
+
+// KART E-POSTASI: yönetim panelindeki "Gönder" düğmesi kartı oyuncunun yazdığı adrese yollar.
+//  - EPOSTA_SERVISI boşken: düğme Gmail'de alıcısı, konusu ve mesajı dolu bir taslak açar ve kartı
+//    indirir; dosyayı taslağa sürükleyip Gönder'e basarsın (tarayıcıda topluluk hesabı açık olmalı).
+//  - Otomatik gönderim için eposta-servisi-kurulum.txt dosyasındaki adımları izle; sonunda eline
+//    geçen adresi EPOSTA_SERVISI'ne, orada belirlediğin anahtarı EPOSTA_ANAHTARI'na yaz. O zaman
+//    kart topluluğun Gmail hesabından, ekte gider. Gönderirken internet gerekir.
+//  - Anahtar yazılı hâliyle bu dosyayı internete koyma: adresi ve anahtarı bilen, hesaptan e-posta atabilir.
+//  - Mesajda {ad} oyuncunun adıyla, {etiketler} KART_ETIKETLERI ile değişir (istersen {sonuc} da
+//    oyuncunun süresini yazar). Paragrafları boş satırla ayır. Mesaj "Saygılarımızla," ile biter;
+//    hemen altına EPOSTA_IMZASI eklenir, o yüzden sonuna topluluğun adını yazma.
+const EPOSTA_SERVISI = '';
+const EPOSTA_ANAHTARI = '';
+const EPOSTA_KONUSU = 'Logoyu Kodla Yarışması | Kartınız Ekte';
+const EPOSTA_MESAJI = 'Merhaba {ad},\n\n'
+  + 'Yazılım Mühendisliği Topluluğu standını ziyaret ettiğiniz ve Logoyu Kodla yarışmamıza katıldığınız için teşekkür ederiz. '
+  + 'Sizi aramızda görmekten mutluluk duyduk.\n\n'
+  + 'Yarışmaya özel hazırlanan kartınız bu e-postanın ekindedir. '
+  + 'Kartınızı sosyal medyada paylaşırken bizi etiketlerseniz memnuniyet duyarız: {etiketler}\n\n'
+  + 'Topluluğumuzun etkinliklerini ve duyurularını aşağıdaki bağlantılardan takip edebilirsiniz. '
+  + 'Bir sonraki etkinliğimizde yeniden görüşmek dileğiyle.\n\n'
+  + 'Sevgiler,';
+
+// E-POSTA İMZASI: otomatik gönderilen e-postanın altına eklenir (HTML). Topluluğun Gmail'deki
+// imzasının kopyasıdır; Gmail'deki imzayı değiştirirsen burayı da güncelle. Alttaki görsel,
+// Gmail'in imza görselini sakladığı adresten gelir. Boş bırakırsan e-posta imzasız, düz metin gider.
+// (Servis kurulmadan açılan Gmail taslağına imzayı Gmail kendisi ekler.)
+const EPOSTA_IMZASI = '<div style="text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5">'
+  + '<div><strong>Yazılım Mühendisliği Topluluğu</strong></div>'
+  + '<div><a href="https://yazilimmuhendisligi.com.tr/">yazilimmuhendisligi.com.tr</a></div>'
+  + '<div><a href="mailto:info@yazilimmuhendisligi.com.tr">info@yazilimmuhendisligi.com.tr</a></div>'
+  + '<div><a href="mailto:ymtbanu@gmail.com">ymtbanu@gmail.com</a></div>'
+  + '<div><br></div>'
+  + '<div><a href="https://www.linkedin.com/company/yazilim-muhendisligi-toplulugu/">LinkedIn</a> | <a href="https://www.instagram.com/ymtbanu/">Instagram</a></div>'
+  + '<div><br></div>'
+  + '<img src="https://ci3.googleusercontent.com/mail-sig/AIorK4x1mOijixImlGkcBX4u5gytW4DN5uGdQnsKd6KNEe3bNjbIJ6LLVSJS22lMoUkETDg8GXLbEFE" width="420" height="136" alt="Yazılım Mühendisliği Topluluğu" style="display:block;margin:0 auto">'
+  + '</div>';
+
+// Yönetim paneli PIN'i (giriş ekranındayken F2 ile açılır). Stanttan önce değiştir.
+const ADMIN_PIN = '1234';
+
+// UNVANLAR: sonuç kartındaki unvan plakası; hıza (WPM) göre verilir. Programı bitirenlerde hız
+// süreyle aynı sırayı verir (bu programda 50 WPM yaklaşık 39 sn, 38 WPM 51 sn, 26 WPM 75 sn);
+// süresi dolanlar da bir unvan alsın diye süre yerine hız kullanılır. Büyükten küçüğe sıralı
+// kalmalı ve son satırın enAz değeri 0 olmalı.
+//  - renk: o unvanın kartındaki vurgu rengi (plaka, logonun çevresindeki çentikler, köşe işaretleri).
+//  - Plakada unvan büyük harfle yazılır. Türkçe bir unvan yazacaksan baştan büyük harfle yaz
+//    (ör. 'KIDEMLİ'); büyütme İngilizce kuralıyla yapıldığı için "i" harfi "I" olur.
+const UNVANLAR = [
+  { enAz: 50, ad: 'Senior Developer',    renk: '#f3c04a' },   // altın
+  { enAz: 38, ad: 'Mid-level Developer', renk: '#5aa7ff' },   // mavi
+  { enAz: 26, ad: 'Junior Developer',    renk: '#4fd896' },   // yeşil
+  { enAz: 0,  ad: 'Stajyer',             renk: '#a9b8d0' },   // gümüş mavi
+];
+
+// BOŞTA GÖSTERİ: giriş ekranı bu kadar saniye boş kalırsa program kendi kendine yazılmaya
+// başlar; herhangi bir tuş ya da tıklama girişe döndürür. 0 yaparsan gösteri kapanır.
+const GOSTERI_BEKLEME_SN = 30;
+
+// OTOMATİK YEDEK: bu kadar oyunda bir (yarıda bırakılanlar da sayılır), kayıtların tamamı tarayıcının
+// indirilenler klasörüne bir dosya olarak kaydedilir (ymt-yedek-...json). Tarayıcının verileri silinirse ya da başka bir
+// bilgisayara geçilirse yönetim panelindeki "Yedekten yükle" ile geri getirilir. 0 yaparsan
+// otomatik yedek kapanır; yedek yalnızca panelden elle alınır.
+const OTOMATIK_YEDEK_ARALIGI = 5;
+
+// Kayıtların LocalStorage'da tutulduğu anahtar.
+const STORAGE_KEY = 'ymt_logoyu_kodla_v1';
+
+/* ===================================================================== */
+
+const $ = (id) => document.getElementById(id);
+const IPUCU = 'Satırı bitirince Enter\'a bas, satır çalışır.';
+const IPUCU_BASLA = 'Hazır olunca yazmaya başla. Süre ilk tuşla başlar.';
+// Sonuç ekranındaki kod yağmurunda akan karakterler
+const YAGMUR_KARAKTERLERI = '01{}()<>=+*/;:.#YMT';
+const KALICI_EFEKTLER = ['belir', 'halka', 'ikili', 'renk', 'net', 'parlat'];
+const ikili = (adet) => Array.from({ length: adet }, () => (Math.random() < .5 ? '0' : '1')).join('');
+
+document.querySelectorAll('[data-logo]').forEach((img) => { img.src = LOGO_SRC; });
+// Üniversite logosu gizli başlar, dosyası yüklenebilirse açılır
+$('universiteLogo').addEventListener('load', (e) => { e.target.hidden = false; });
+$('universiteLogo').src = UNIVERSITE_LOGO_SRC;
+// Karekod alanı gizli başlar, görsel yüklenebilirse açılır
+document.querySelectorAll('[data-karekod]').forEach((img) => {
+  img.addEventListener('load', () => {
+    img.parentElement.hidden = false;
+    document.querySelectorAll('[data-karekod-yazi]').forEach((el) => { el.hidden = false; });
+  });
+  img.src = KAREKOD_SRC;
+});
+$('kunyeSure').textContent = SURE_SINIRI_SN;
+$('kunyeSatir').textContent = PROGRAM.length;
+$('logoIkili').textContent = ikili(700).repeat(2);   // iki eş yarı: yukarı kayarken kesintisiz döner
+$('girisAciklama').textContent = 'Ekrandaki programı satır satır yaz. Her satır çalışır ve logoya bir şey yapar; program bitince logo tamamlanır.';
+$('onayNot').textContent = 'Üyeler ' + HAK_UYE + ' kez yarışabilir. Üyeliğini stanttaki görevliye göster.';
+$('eposta').placeholder = EPOSTA_ZORUNLU ? '' : 'isteğe bağlı';
+
+let durum = 'giris';   // 'giris' | 'oyun' | 'sonuc' | 'gosteri'
+let oyuncu = null;
+let denemeNo = 1;      // oyuncunun kullandığı kaçıncı hak
+let sekme = 'genel';   // sağdaki tablonun açık sekmesi: 'genel' | 'bolum' | 'hatasiz'
+let sekmeZamanlayici = 0;
+let panelSuzgec = 'tum';   // yönetim panelindeki süzgeç: 'tum' | 'ilk3' | 'hatasiz'
+let sonKart = null;        // sonuç ekranında gösterilen kartın bilgileri (bkz. kayitKarti)
+let satirlar = [];     // her program satırının <div>'i
+let hucreler = [];     // { ch, el, satir, oto } — oto: otomatik geçilen girinti boşluğu
+let gerekliHucreler = [];   // hucreler'in oyuncunun yazdığı (oto olmayan) kısmı
+let gerekli = 0;       // oyuncunun basması gereken tuş sayısı (Enter'lar dahil)
+let konum = 0;         // sıradaki karakterin hucreler içindeki yeri
+let yazilan = 0;
+let hataSayisi = 0;
+let iz = [];           // her doğru tuşun basıldığı an (ms); sonraki oyunculara hayalet olur
+let hayaletIz = null;  // liderin izi
+let hayaletSayi = 0;   // liderin şu ana dek basmış olduğu tuş sayısı
+let hayaletEl = null;
+let bitisSureleri = [];   // bitirenlerin süreleri (küçükten büyüğe); canlı sıra için
+let canliOnumde = 0;      // geçen süre kendi süresini aşmış, yani oyuncuyu kesin geçmiş olanların sayısı
+let t0 = 0;
+let raf = 0;
+let bitisZamanlayici = 0;
+let gosteriZamanlayici = 0;
+let bostaZamanlayici = 0;
+let yaziyorZamanlayici = 0;
+let yagmurRaf = 0;
+
+/* ---------- Kayıtlar (LocalStorage) ---------- */
+
+function kayitlariOku() {
+  try {
+    const veri = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(veri) ? veri : [];
+  } catch {
+    return [];
+  }
+}
+
+function kayitlariYaz(kayitlar) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(kayitlar));
+}
+
+// Sıralama: önce programı bitirenler (kısa süre üstte), sonra süresi dolanlar (çok yazan üstte).
+// Eşitlikte az hata yapan, o da eşitse önce oynayan üstte.
+function sirala(a, b) {
+  if (a.durum !== b.durum) return a.durum === 'bitti' ? -1 : 1;
+  return (a.durum === 'bitti' ? a.sureMs - b.sureMs : b.ilerleme - a.ilerleme)
+    || a.hata - b.hata || a.tarih.localeCompare(b.tarih);
+}
+
+function siralananlar() {
+  return kayitlariOku().filter((k) => k.durum === 'bitti' || k.durum === 'doldu').sort(sirala);
+}
+
+// Önce sıralamaya girenler, sonra yarıda bırakanlar
+function tumKayitlar() {
+  return [...siralananlar(), ...kayitlariOku().filter((k) => k.durum === 'basladi')];
+}
+
+/* ---------- Hatasız ödülü ---------- */
+
+// Öğrencinin programı 0 hatayla bitirdiği en iyi süre; yoksa undefined. Sıralamadaki denemesinden
+// ayrı tutulur (hatasizMs): daha hızlı ama hatalı bir denemesi geçerli olsa da hatasız denemesi yanmaz.
+// Bu alan eklenmeden önceki kayıtlarda sıralamadaki deneme hatasızsa o sayılır.
+function hatasizSure(k) {
+  return k.hatasizMs || (k.durum === 'bitti' && k.hata === 0 ? k.sureMs : undefined);
+}
+
+// Hatasız ödülü sıralaması: programı 0 hatayla bitirenler, hızlıdan yavaşa; ilki özel ödülü alır.
+// İlk üçtekiler bu listeye girmez (onların ödülü zaten var): kimse iki yerde birden görünmez.
+// Her kayıt, hatasız denemesinin süresi ve hızıyla döner.
+function hatasizlar() {
+  const ilkUc = siralananlar().slice(0, 3).map((k) => k.no);
+  return kayitlariOku()
+    .filter((k) => hatasizSure(k) && !ilkUc.includes(k.no))
+    .map((k) => {
+      const sureMs = hatasizSure(k);
+      return { ...k, durum: 'bitti', sureMs, hata: 0, wpm: Math.round(k.ilerleme / 5 / (sureMs / 60000)) };
+    })
+    .sort(sirala);
+}
+
+/* ---------- Bölümler ---------- */
+
+// Oyuncunun bölümüne kazandırdığı puan: yazdığı her %1 için 1, bitirdiyse kalan her saniye için +1
+function oyuncuPuani(k) {
+  return k.yuzde + (k.durum === 'bitti' ? Math.floor(SURE_SINIRI_SN - k.sureMs / 1000) : 0);
+}
+
+function bolumSiralamasi() {
+  const bolumler = new Map();
+  siralananlar().forEach((k) => {
+    const ad = k.bolum || 'Bölüm belirtilmemiş';
+    const b = bolumler.get(ad) || { ad, oyuncu: 0, puan: 0 };
+    b.oyuncu++;
+    b.puan += oyuncuPuani(k);
+    bolumler.set(ad, b);
+  });
+  return [...bolumler.values()].sort((a, b) => b.puan - a.puan || b.oyuncu - a.oyuncu || a.ad.localeCompare(b.ad, 'tr'));
+}
+
+// Giriş listesi: önce ayarlardaki bölümler (yazıldıkları sırayla), sonra oyuncuların yazdıkları (alfabetik)
+function bolumListesi() {
+  const yazilmis = kayitlariOku().map((k) => k.bolum).filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
+  return [...new Set([...BOLUMLER, ...yazilmis])];
+}
+
+// Giriş ve gösteri ekranlarında liderlik tablosunun altında: ilk iki bölümün puanları ve aradaki fark
+function cekismeyiCiz() {
+  const [on, arka] = bolumSiralamasi();
+  $('cekisme').hidden = !arka || durum === 'oyun' || durum === 'sonuc';
+  if (!arka) return;
+  $('cekismeAd1').textContent = on.ad;
+  $('cekismePuan1').textContent = sayiYaz(on.puan);
+  $('cekismeAd2').textContent = arka.ad;
+  $('cekismePuan2').textContent = sayiYaz(arka.puan);
+  $('cekismeDolu').style.width = on.puan / (on.puan + arka.puan || 1) * 100 + '%';
+  $('cekismeFark').textContent = 'Fark: ' + sayiYaz(on.puan - arka.puan) + ' puan';
+}
+
+function bolumleriDoldur() {
+  const sec = $('bolum');
+  sec.textContent = '';
+  sec.append(new Option('Seç', ''), ...bolumListesi().map((b) => new Option(b, b)), new Option('Listede yok, yazacağım', 'diger'));
+  $('bolumYeniSatir').hidden = true;
+}
+
+/* ---------- Yardımcılar ---------- */
+
+function sureYaz(ms) {
+  const t = Math.floor(ms);
+  const iki = (n) => String(n).padStart(2, '0');
+  return iki(Math.floor(t / 60000)) + ':' + iki(Math.floor(t % 60000 / 1000)) + '.' + String(t % 1000).padStart(3, '0');
+}
+
+// Bir kaydın tabloda görünen sonucu: bitirdiyse süre, süresi dolduysa tamamladığı yüzde
+function sonucYaz(k) {
+  return k.durum === 'bitti' ? sureYaz(k.sureMs) : '%' + k.yuzde;
+}
+
+function sayiYaz(n) {
+  return n.toLocaleString('tr-TR');
+}
+
+function parca(etiket, sinif, metin) {
+  const el = document.createElement(etiket);
+  el.className = sinif;
+  el.textContent = metin;
+  return el;
+}
+
+// Bir CSS animasyonunu baştan oynatır
+function canlandir(el, sinif) {
+  el.classList.remove(sinif);
+  void el.offsetWidth;
+  el.classList.add(sinif);
+}
+
+// Geri alınamayan düğmeler: ilk tık sorar, 3 saniye içindeki ikinci tık uygular
+function ikiTikla(btn, islem) {
+  if (btn.dataset.onay) {
+    delete btn.dataset.onay;
+    btn.textContent = btn.dataset.metin;
+    islem();
+    return;
+  }
+  btn.dataset.onay = '1';
+  btn.dataset.metin = btn.textContent;
+  btn.textContent = 'Emin misin? Tekrar tıkla';
+  setTimeout(() => {
+    if (btn.dataset.onay) { delete btn.dataset.onay; btn.textContent = btn.dataset.metin; }
+  }, 3000);
+}
+
+/* ---------- Liderlik tablosu ---------- */
+
+// Sağdaki tablo üç sekmeli: genel sıralama (ilk üç ödül alır), bölümler ve hatasızlar (ilki özel ödül alır).
+// canli: o an oynayan oyuncu ({ ad, soyad, sonuc, onumde }); genel tabloda onumde kişinin altına girer
+function liderligiCiz(yeniNo, canli) {
+  document.querySelectorAll('.sekme').forEach((btn) => btn.classList.toggle('secili', btn.dataset.sekme === sekme));
+  let siralar;
+  if (sekme === 'bolum') {
+    siralar = bolumSiralamasi().map((b) => ({ ad: b.ad, sonuc: sayiYaz(b.puan) + ' puan, ' + b.oyuncu + ' oyuncu', ikiSatir: true }));
+    $('liderlikSayi').textContent = 'Her oyuncu bölümüne puan kazandırır.';
+    $('liderlikBos').textContent = 'Henüz puan alan bölüm yok. İlk puanı sen kazandır.';
+  } else if (sekme === 'hatasiz') {
+    siralar = hatasizlar().map((k) => ({ ad: k.ad + ' ' + k.soyad, sonuc: sonucYaz(k) }));
+    $('liderlikSayi').textContent = 'İlk üç dışında 0 hatayla en hızlı bitiren özel ödül alır.';
+    $('liderlikBos').textContent = 'Henüz hatasız ödülünün sahibi yok. İlk sen ol.';
+  } else {
+    siralar = siralananlar().map((k) => ({ ad: k.ad + ' ' + k.soyad, sonuc: sonucYaz(k), yeni: k.no === yeniNo }));
+    if (canli) siralar.splice(canli.onumde, 0, { ad: canli.ad + ' ' + canli.soyad, sonuc: canli.sonuc, canli: true });
+    $('liderlikSayi').textContent = siralar.length ? siralar.length + ' yarışmacı' : '';
+    $('liderlikBos').textContent = 'Henüz yarışan yok. İlk sıra seni bekliyor.';
+  }
+  const ol = $('siralama');
+  ol.textContent = '';
+  siralar.forEach((s, i) => {
+    const li = document.createElement('li');
+    // Ödül plakası: hatasızlarda yalnızca birinciye, öbür sekmelerde ilk üçe
+    if (sekme === 'hatasiz') li.className = i ? '' : 'odul hatasiz';
+    else if (i < 3) li.className = 'odul sira-' + (i + 1);
+    if (s.ikiSatir) li.classList.add('iki-satir');
+    if (s.canli) li.classList.add('canli');
+    if (s.yeni) li.classList.add('yeni');
+    li.append(parca('span', 'no', String(i + 1).padStart(2, '0')), parca('span', 'isim', s.ad), parca('span', 'skor', s.sonuc));
+    li.style.setProperty('--i', i);   // giriş ekranında satırlar bu sırayla yerine oturur (bkz. satirGir)
+    ol.appendChild(li);
+  });
+  $('liderlikBos').hidden = siralar.length > 0;
+  const vurgu = ol.querySelector('.canli, .yeni');
+  if (vurgu) vurgu.scrollIntoView({ block: 'nearest' });
+  cekismeyiCiz();
+  rekoruYaz();
+}
+
+// Giriş ekranındaki meydan okuma: geçilecek en iyi sonuç ve sahibi
+function rekoruYaz() {
+  const lider = siralananlar()[0];
+  $('rekorSonuc').textContent = lider ? sonucYaz(lider) : '';
+  $('rekorKim').textContent = lider ? lider.ad + ' ' + lider.soyad + '. Geçebilir misin?' : 'Henüz yok. İlk süreyi sen koy.';
+}
+
+// Giriş ve gösteri ekranlarında tablo 8 saniyede bir sonraki sekmeye geçer; oyun sırasında genel tabloda kalır
+function sekmeDongusu() {
+  const sekmeler = ['genel', 'bolum', 'hatasiz'];
+  clearInterval(sekmeZamanlayici);
+  sekmeZamanlayici = setInterval(() => {
+    if (durum !== 'giris' && durum !== 'gosteri') return;
+    sekme = sekmeler[(sekmeler.indexOf(sekme) + 1) % sekmeler.length];
+    liderligiCiz();
+  }, 8000);
+}
+
+document.querySelectorAll('.sekme').forEach((btn) => btn.addEventListener('click', () => {
+  if (durum === 'oyun') return;
+  sekme = btn.dataset.sekme;
+  liderligiCiz();
+  sekmeDongusu();   // elle seçilen sekme 8 saniye ekranda kalsın
+  btn.blur();
+}));
+
+/* ---------- Giriş ---------- */
+
+$('girisForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const ad = $('ad').value.trim();
+  const soyad = $('soyad').value.trim();
+  const no = $('no').value.trim();
+  const eposta = $('eposta').value.trim();
+  const uye = $('uye').checked;
+  let bolum = $('bolum').value;
+  if (bolum === 'diger') {
+    // Elle yazılan bölüm listedekilerden biriyle aynıysa (harf büyüklüğü farkı dahil) listedeki yazım kullanılır
+    const yazilan = $('bolumYeni').value.trim().replace(/\s+/g, ' ');
+    bolum = bolumListesi().find((b) => b.toLocaleLowerCase('tr') === yazilan.toLocaleLowerCase('tr')) || yazilan;
+  }
+  // Bu numaranın harcadığı hak (deneme alanı olmayan eski kayıt 1 sayılır)
+  const kayit = kayitlariOku().find((k) => k.no === no);
+  const kullanilan = kayit ? kayit.deneme || 1 : 0;
+  let uyari = '';
+  if (!ad || !soyad) uyari = 'Adını ve soyadını yaz.';
+  else if (!/^\d{5,15}$/.test(no)) uyari = 'Öğrenci numarası yalnızca rakamlardan oluşmalı (5-15 hane).';
+  else if (EPOSTA_ZORUNLU && !eposta) uyari = 'E-posta adresini yaz.';
+  else if (eposta && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eposta)) uyari = 'E-posta adresini kontrol et (örnek: ad@okul.edu.tr).';
+  else if (!bolum) uyari = 'Bölümünü seç ya da yaz.';
+  else if (kullanilan >= HAK_UYE) uyari = 'Bu öğrenci numarası tüm haklarını kullandı!';
+  else if (kullanilan >= (uye ? HAK_UYE : HAK_UYE_OLMAYAN)) uyari = 'Bu öğrenci numarası ile daha önce yarışıldı! Topluluk üyeleri ' + HAK_UYE + ' kez yarışabilir.';
+  $('girisUyari').textContent = uyari;
+  if (!uyari) oyunuBaslat({ no, ad, soyad, eposta, uye, bolum }, kullanilan + 1);
+});
+
+$('bolum').addEventListener('change', () => {
+  $('bolumYeniSatir').hidden = $('bolum').value !== 'diger';
+  if ($('bolum').value === 'diger') $('bolumYeni').focus();
+});
+
+function giriseDon() {
+  cancelAnimationFrame(raf);
+  cancelAnimationFrame(yagmurRaf);
+  clearTimeout(bitisZamanlayici);
+  clearTimeout(gosteriZamanlayici);
+  durum = 'giris';
+  document.body.classList.remove('gosteride');
+  document.body.classList.add('giriste');   // sahne giriş düzenine geçer (bkz. .giriste .sahne)
+  $('oyun').hidden = true;
+  $('giris').hidden = false;
+  $('girisForm').reset();
+  bolumleriDoldur();
+  $('girisUyari').textContent = '';
+  $('logoIsik').className = 'logo-isik';
+  $('logoIsik').style.setProperty('--p', 100);
+  $('yuzde').hidden = true;
+  liderligiCiz();
+  $('ad').focus();
+  bostayiSifirla();
+}
+
+/* ---------- Kod paneli ve logo (gerçek oyun da boşta gösteri de bunları kullanır) ---------- */
+
+function koduCiz() {
+  const kod = $('kod');
+  kod.textContent = '';
+  hucreler = [];
+  satirlar = [];
+  PROGRAM.forEach((adim, i) => {
+    const div = parca('div', 'satir', '');
+    const metin = adim.kod.replace(/\t/g, '    ').trimEnd();
+    const girinti = metin.length - metin.trimStart().length;
+    [...metin, '\n'].forEach((ch, j) => {
+      const el = parca('span', ch === '\n' ? 'h enter' : 'h', ch === '\n' ? '↵' : ch);
+      div.appendChild(el);
+      hucreler.push({ ch, el, satir: i, oto: j < girinti });
+    });
+    div.appendChild(parca('span', 'cikti', adim.cikti));
+    kod.appendChild(div);
+    satirlar.push(div);
+  });
+  gerekliHucreler = hucreler.filter((h) => !h.oto);
+  gerekli = gerekliHucreler.length;
+}
+
+function sahneyiKur() {
+  konum = 0; yazilan = 0;
+  koduCiz();
+  document.body.classList.remove('giriste');
+  $('giris').hidden = true;
+  $('oyun').hidden = false;
+  $('logoIsik').className = 'logo-isik kuruluyor dolum';
+  $('yuzde').hidden = false;
+  logoyuDoldur(0);
+  document.activeElement.blur();
+  imleciKoy();
+}
+
+function imleciKoy() {
+  while (hucreler[konum].oto) konum++;
+  const h = hucreler[konum];
+  h.el.classList.add('imlec');
+  satirlar.forEach((div, i) => div.classList.toggle('aktif', i === h.satir));
+  h.el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+// Logo dolumu: --p (0-100) hem dolum yüksekliğini hem opaklığı belirler (bkz. .logo-dolu)
+function logoyuDoldur(yuzde) {
+  $('logoIsik').style.setProperty('--p', yuzde);
+  $('yuzde').textContent = '%' + Math.floor(yuzde);
+}
+
+// Enter'la biten satır "çalışır": çıktısı belirir, logoda efekti olur
+function satiriCalistir(i) {
+  satirlar[i].classList.remove('aktif');
+  satirlar[i].classList.add('tamam');
+  const efekt = PROGRAM[i].efekt;
+  if (efekt === 'dondur') canlandir($('logoDaire'), 'dondur');
+  else if (efekt) $('logoIsik').classList.add(efekt);
+  canlandir($('logoHalka'), 'nabiz');
+  if (durum === 'oyun') canliSatiriCiz();
+}
+
+function logoTamam() {
+  $('logoIsik').classList.remove('dolum');
+  $('logoIsik').classList.add(...KALICI_EFEKTLER);
+  canlandir($('flas'), 'calis');
+}
+
+// Yazarken kod paneli parlar (.yaziyor); yarım saniye tuşa basılmazsa söner
+function yaziyorIsaretle() {
+  $('kodKutu').classList.add('yaziyor');
+  clearTimeout(yaziyorZamanlayici);
+  yaziyorZamanlayici = setTimeout(() => $('kodKutu').classList.remove('yaziyor'), 500);
+}
+
+// Sıradaki karakteri doğru sayıp imleci ilerletir; program bittiyse true döner
+function ilerle() {
+  const h = hucreler[konum];
+  yaziyorIsaretle();
+  h.el.classList.remove('imlec');
+  h.el.classList.add('dogru');
+  konum++;
+  yazilan++;
+  logoyuDoldur(yazilan / gerekli * 100);
+  if (h.ch === '\n') satiriCalistir(h.satir);
+  if (yazilan === gerekli) return true;
+  imleciKoy();
+  return false;
+}
+
+/* ---------- Oyun ---------- */
+
+function oyunuBaslat(yeniOyuncu, yeniDeneme) {
+  oyuncu = yeniOyuncu;
+  denemeNo = yeniDeneme;
+  durum = 'oyun';
+  hataSayisi = 0; t0 = 0; iz = [];
+  sahneyiKur();
+  $('sure').textContent = sureYaz(0);
+  $('sinirDolu').style.transform = '';
+  $('oyun').classList.remove('azaldi');
+  $('oyuncuAd').textContent = oyuncu.ad + ' ' + oyuncu.soyad + (denemeNo > 1 ? ' (' + denemeNo + '. hak)' : '');
+  hatayiYaz();
+  ipucuYaz();
+
+  // Hayalet: liderin tuş zamanları kodun üstünde sarı imleç olarak oynatılır
+  const liste = siralananlar();
+  const lider = liste[0];
+  hayaletIz = lider && lider.iz ? lider.iz : null;
+  hayaletSayi = 0;
+  hayaletEl = null;
+  $('yarisDurum').className = 'yaris-durum';
+  $('yarisDurum').textContent = hayaletIz ? 'Sarı imleç liderin o andaki yerini gösterir.' : 'Henüz lider yok. İlk süreyi sen koy.';
+  $('yarisLider').textContent = lider ? 'Lider: ' + lider.ad + ' ' + lider.soyad + ', ' + sonucYaz(lider) : '';
+
+  bitisSureleri = liste.filter((k) => k.durum === 'bitti').map((k) => k.sureMs);
+  canliOnumde = 0;
+  sekme = 'genel';   // canlı satır genel tabloda durur
+  canliSatiriCiz();
+}
+
+// Tablodaki canlı satır: oyuncu, süresi şimdiden geçilmiş olanların hemen altında durur
+function canliSatiriCiz() {
+  liderligiCiz(null, { ad: oyuncu.ad, soyad: oyuncu.soyad, sonuc: '%' + Math.floor(yazilan / gerekli * 100), onumde: canliOnumde });
+}
+
+function hatayiYaz() {
+  $('hataSayaci').textContent = hataSayisi;
+  $('hataSayaci').classList.toggle('var', hataSayisi > 0);
+}
+
+function ipucuYaz(hataMetni) {
+  $('ipucu').textContent = hataMetni || (t0 ? IPUCU : IPUCU_BASLA);
+  $('ipucu').classList.toggle('hata', Boolean(hataMetni));
+}
+
+// Bir kare: süre, sınır çubuğu, hayalet imleç ve canlı sıra
+function kare() {
+  const gecen = performance.now() - t0;
+  const kalan = Math.max(0, SURE_SINIRI_SN * 1000 - gecen);
+  $('sure').textContent = sureYaz(gecen);
+  $('sinirDolu').style.transform = 'scaleX(' + kalan / (SURE_SINIRI_SN * 1000) + ')';
+  $('oyun').classList.toggle('azaldi', kalan <= 10000);
+
+  if (hayaletIz) {
+    while (hayaletSayi < hayaletIz.length && hayaletIz[hayaletSayi] <= gecen) hayaletSayi++;
+    const el = hayaletSayi < gerekli ? gerekliHucreler[hayaletSayi].el : null;
+    if (el !== hayaletEl) {
+      if (hayaletEl) hayaletEl.classList.remove('hayalet');
+      if (el) el.classList.add('hayalet');
+      hayaletEl = el;
+    }
+    const fark = hayaletSayi - yazilan;
+    const metin = fark > 0 ? 'Lider ' + fark + ' karakter önde'
+      : fark < 0 ? 'Sen ' + -fark + ' karakter öndesin'
+      : 'Liderle başa baş';
+    if ($('yarisDurum').textContent !== metin) {
+      $('yarisDurum').textContent = metin;
+      $('yarisDurum').className = 'yaris-durum' + (fark > 0 ? ' geride' : fark < 0 ? ' onde' : '');
+    }
+  }
+
+  // Süre bir yarışmacının süresini geçtikçe canlı satır tabloda bir basamak iner
+  let indi = false;
+  while (canliOnumde < bitisSureleri.length && bitisSureleri[canliOnumde] <= gecen) { canliOnumde++; indi = true; }
+  if (indi) canliSatiriCiz();
+}
+
+function sureyiBaslat() {
+  t0 = performance.now();
+  // Hak ilk tuşta harcanır: sayfayı yenileyip baştan denemek işe yaramaz.
+  // İkinci hakta kaydın önceki sonucu yerinde durur.
+  const kayitlar = kayitlariOku();
+  const eski = kayitlar.find((k) => k.no === oyuncu.no);
+  if (eski) Object.assign(eski, oyuncu, { deneme: denemeNo });
+  else kayitlar.push({ ...oyuncu, durum: 'basladi', deneme: denemeNo, tarih: new Date().toISOString() });
+  kayitlariYaz(kayitlar);
+  const dongu = () => { kare(); raf = requestAnimationFrame(dongu); };
+  raf = requestAnimationFrame(dongu);
+  // Bitiş kare döngüsüne bağlı değil: sekme arkada kalsa da süre tam vaktinde dolar
+  bitisZamanlayici = setTimeout(() => oyunuBitir(false), SURE_SINIRI_SN * 1000);
+}
+
+function dogruYaz() {
+  iz.push(Math.round(performance.now() - t0));
+  // Önceki yanlış tuşun kırmızısı doğru tuşla kendiliğinden kalkar
+  hucreler[konum].el.classList.remove('yanlis');
+  ipucuYaz();
+  if (ilerle()) oyunuBitir(true);
+}
+
+// Yanlış tuş: karakter kırmızı yanar ve hata sayılır. Silmek gerekmez, doğrusu yazılınca devam edilir.
+function yanlisYaz(e) {
+  hataSayisi++;
+  hucreler[konum].el.classList.add('yanlis');
+  canlandir($('kodKutu'), 'salla');
+  hatayiYaz();
+  ipucuYaz(e.getModifierState('CapsLock')
+    ? 'Caps Lock açık. Kapatıp doğrusunu yaz.'
+    : 'Yanlış karakter. Doğrusunu yaz.');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (durum !== 'oyun') return;
+  // Ctrl/Cmd kısayollarına dokunma. AltGr Windows'ta Ctrl+Alt olarak gelir; { } [ ] # için serbest.
+  if (e.metaKey || (e.ctrlKey && !e.altKey)) return;
+
+  // Silmeye gerek yok; Backspace sayfayı geri götürmesin, Tab odağı kaydırmasın
+  if (e.key === 'Backspace' || e.key === 'Tab') { e.preventDefault(); return; }
+
+  const girilen = e.key === 'Enter' ? '\n' : e.key;
+  if (girilen.length !== 1) return;   // Shift, F5, F11, ölü tuşlar...
+  e.preventDefault();                 // boşluk sayfayı kaydırmasın, ' ve / hızlı aramayı açmasın
+  if (e.repeat) return;
+
+  if (!t0) sureyiBaslat();
+  if (girilen === hucreler[konum].ch) dogruYaz();
+  else yanlisYaz(e);
+});
+
+$('vazgecBtn').addEventListener('click', (e) => {
+  ikiTikla(e.currentTarget, () => {
+    oyunSonrasiYedek();   // yarıda bırakılan oyun da otomatik yedeğin sayacına girer
+    giriseDon();
+  });
+  e.currentTarget.blur();
+});
+
+/* ---------- Bitiş ---------- */
+
+// bitti: program tamamlandı (true) ya da süre sınırı doldu (false)
+function oyunuBitir(bitti) {
+  if (durum !== 'oyun') return;
+  const sureMs = bitti ? Math.round(performance.now() - t0) : SURE_SINIRI_SN * 1000;
+  cancelAnimationFrame(raf);
+  clearTimeout(bitisZamanlayici);
+  durum = 'sonuc';
+  $('sure').textContent = sureYaz(sureMs);
+
+  // WPM: 5 karakter = 1 kelime
+  const wpm = Math.round(yazilan / 5 / (sureMs / 60000));
+  const yuzde = Math.floor(yazilan / gerekli * 100);
+  const yeni = { ...oyuncu, deneme: denemeNo, durum: bitti ? 'bitti' : 'doldu', sureMs, ilerleme: yazilan, yuzde, wpm, hata: hataSayisi, tarih: new Date().toISOString(), iz };
+  // Sıralamada öğrencinin en iyi denemesi geçerlidir: yeni sonuç ancak öncekinden iyiyse kaydın yerini alır
+  const kayitlar = kayitlariOku();
+  const eski = kayitlar.find((k) => k.no === oyuncu.no);
+  const gecerli = !eski || eski.durum === 'basladi' || sirala(yeni, eski) < 0;
+  // Hatasız en iyi süre, hangi deneme geçerli olursa olsun kayıtta kalır (bkz. hatasizSure)
+  const hatasizMs = Math.min(bitti && hataSayisi === 0 ? sureMs : Infinity, (eski && hatasizSure(eski)) || Infinity);
+  const kalan = gecerli ? yeni : eski;
+  if (hatasizMs < Infinity) kalan.hatasizMs = hatasizMs;
+  kayitlariYaz([...kayitlar.filter((k) => k !== eski), kalan]);
+  liderligiCiz(oyuncu.no);
+
+  const liste = siralananlar();
+  const sira = liste.findIndex((k) => k.no === oyuncu.no) + 1;
+  // Hatasız ödülündeki yeri; ilk üçteyse ya da hiç hatasız bitirmediyse 0
+  const hatasizSira = hatasizlar().findIndex((k) => k.no === oyuncu.no) + 1;
+  let not = !gecerli ? 'Önceki denemen daha iyiydi (' + sonucYaz(eski) + '); sıralamada o geçerli.'
+    : sira <= 3 ? 'Şu an ödül sırasındasın.' + (SPONSOR_ADI ? ' Ödül sponsoru: ' + SPONSOR_ADI + '.' : '')
+    : 'Ödül sırası için geçilecek sonuç: ' + sonucYaz(liste[2]) + '.';
+  if (!bitti) not = 'Süre doldu. ' + not;
+  if (hatasizSira === 1) not += ' İlk üç dışındaki en hızlı hatasız sensin: özel ödül şu an sende.';
+  else if (hatasizSira && bitti && hataSayisi === 0) not += ' Hatasız ödülünde ' + hatasizSira + '. sıradasın.';
+  // Sıralamada geçerli olan deneme bölümün puanına da yazılır
+  if (gecerli) {
+    const bolumSira = bolumSiralamasi().findIndex((b) => b.ad === oyuncu.bolum) + 1;
+    not += ' Bölümüne ' + oyuncuPuani(yeni) + ' puan kazandırdın; ' + oyuncu.bolum + ' şu an ' + bolumSira + '. sırada.';
+  }
+  const kalanHak = (oyuncu.uye ? HAK_UYE : HAK_UYE_OLMAYAN) - denemeNo;
+  if (kalanHak > 0) not += ' ' + kalanHak + ' hakkın daha var.';
+  else if (denemeNo < HAK_UYE) not += ' Üye olursan ' + (HAK_UYE - denemeNo) + ' hakkın daha olur.';
+
+  // Kart: bu denemenin sonucuyla çizilir (biçim için bkz. kayitKarti).
+  // Rozet: ilk üçe girene sırasının renginde; ilk üç dışında hatasız ödülünü bu denemeyle tutana yeşil
+  const ilkUcte = sira <= 3 && gecerli;
+  const hatasizBirinci = hatasizSira === 1 && bitti && hataSayisi === 0;
+  const unvan = unvanBul(wpm);
+  sonKart = {
+    no: oyuncu.no, ad: oyuncu.ad, soyad: oyuncu.soyad,
+    altYazi: oyuncu.bolum + ' · ' + new Date().toLocaleDateString('tr-TR'),
+    unvan: unvan.ad, renk: unvan.renk,
+    rozet: ilkUcte ? (sira === 1 ? 'Yeni lider!' : 'İlk üçe girdin!') : hatasizBirinci ? 'Hatasız en hızlı!' : '',
+    rozetTuru: ilkUcte ? sira : 'hatasiz',
+    buyuk: bitti ? sureYaz(sureMs) : '%' + yuzde,
+    ek: bitti ? '' : 'tamamlandı',
+    wpm,
+    sira: sira + '.',
+    hata: hataSayisi,
+  };
+  kartiCiz(sonKart, $('kartTuval'), true);
+  $('kartTuval').setAttribute('aria-label', [oyuncu.ad + ' ' + oyuncu.soyad, unvan.ad, sonKart.buyuk + (sonKart.ek ? ' ' + sonKart.ek : ''), wpm + ' WPM', sira + '. sıra', hataSayisi + ' hata'].join(', '));
+  $('sonucNot').textContent = not;
+
+  // Program bittiyse önce logo tamamlanıp parlar, pop-up hemen ardından gelir
+  if (bitti) logoTamam();
+  else { $('sinirDolu').style.transform = 'scaleX(0)'; ipucuYaz('Süre doldu.'); }
+
+  const btn = $('sonrakiBtn');
+  btn.disabled = true;   // hızla yazmaya devam eden oyuncu pop-up'ı yanlışlıkla kapatmasın
+  setTimeout(() => {
+    $('sonuc').hidden = false;
+    yagmuruBaslat();
+    setTimeout(() => { btn.disabled = false; btn.focus(); }, 1200);
+  }, 900);
+}
+
+// Kod yağmuru: sonuç ekranı açık kaldıkça kartın arkasında yukarıdan aşağı karakterler akar.
+// Oyuncu fotoğrafı ne zaman çekerse çeksin arka plan dolu olsun diye sürekli döner; giriseDon durdurur.
+function yagmuruBaslat() {
+  const tuval = $('yagmur');
+  const c = tuval.getContext('2d');
+  tuval.width = innerWidth;   // boyut atamak tuvali de temizler
+  tuval.height = innerHeight;
+  const boy = Math.round(innerHeight / 40);   // bir karakterin kapladığı karenin kenarı (px)
+  const renkler = ['#5aa7ff', '#a9e4f8', '#4fd896'];
+  // Her sütunda en son yazılan karakterin satırı; sütunlar ekranın üstünden dağınık başlar
+  const sutunlar = Array.from({ length: Math.ceil(innerWidth / boy) }, () => -Math.floor(Math.random() * 40));
+  c.font = '600 ' + Math.round(boy * .8) + 'px Consolas, monospace';
+  let sonAdim = 0;
+  const ciz = (simdi) => {
+    yagmurRaf = requestAnimationFrame(ciz);
+    if (simdi - sonAdim < 55) return;
+    sonAdim = simdi;
+    c.fillStyle = 'rgba(4, 8, 20, .14)';   // önceki karakterleri her adımda biraz karartır: iz bırakır
+    c.fillRect(0, 0, tuval.width, tuval.height);
+    sutunlar.forEach((satir, i) => {
+      c.fillStyle = renkler[i % renkler.length];
+      c.fillText(yagmurKarakteri(), i * boy, satir * boy);
+      // Ekranın altına varan sütun rastgele bir anda baştan başlar
+      sutunlar[i] = satir * boy > tuval.height && Math.random() > .96 ? 0 : satir + 1;
+    });
+  };
+  yagmurRaf = requestAnimationFrame(ciz);
+}
+
+function yagmurKarakteri() {
+  return YAGMUR_KARAKTERLERI[Math.floor(Math.random() * YAGMUR_KARAKTERLERI.length)];
+}
+
+$('sonrakiBtn').addEventListener('click', () => {
+  $('sonuc').hidden = true;
+  oyunSonrasiYedek();   // burada, çünkü tarayıcı dosya indirmeye ancak bir tıklama ya da tuşun ardından izin verir
+  giriseDon();
+});
+
+/* ---------- Kartı indirme ---------- */
+
+// Hıza göre unvan (bkz. AYARLAR'da UNVANLAR): { ad, renk }
+function unvanBul(wpm) {
+  return UNVANLAR.find((u) => wpm >= u.enAz);
+}
+
+// Yönetim panelinden indirilen ya da gönderilen kartın bilgileri: öğrencinin kaydı, sıralamadaki
+// güncel yeri ve ödülüyle. İlk üçteki oyuncunun kartı sıralamadaki sonucuyla, hatasız ödülünü
+// tutanınki hatasız denemesiyle çizilir. Sonuç ekranındaki kart (sonKart) da aynı biçimdedir.
+// rozetTuru: 1, 2, 3 (ilk üç) ya da 'hatasiz'; rozetin rengini belirler.
+function kayitKarti(no) {
+  const liste = siralananlar();
+  const sira = liste.findIndex((k) => k.no === no) + 1;
+  const hatasizBirinci = hatasizlar()[0];
+  const k = hatasizBirinci && hatasizBirinci.no === no ? hatasizBirinci : liste[sira - 1];
+  const unvan = unvanBul(k.wpm);
+  return {
+    no: k.no, ad: k.ad, soyad: k.soyad,
+    altYazi: (k.bolum || 'Bölüm belirtilmemiş') + ' · ' + new Date(k.tarih).toLocaleDateString('tr-TR'),
+    unvan: unvan.ad, renk: unvan.renk,
+    rozet: sira <= 3 ? ['Birinci', 'İkinci', 'Üçüncü'][sira - 1] : k === hatasizBirinci ? 'Hatasız en hızlı' : '',
+    rozetTuru: sira <= 3 ? sira : 'hatasiz',
+    buyuk: sonucYaz(k),
+    ek: k.durum === 'bitti' ? '' : 'tamamlandı',
+    wpm: k.wpm,
+    sira: sira + '.',
+    hata: k.hata,
+  };
+}
+
+// Kartı story boyutunda (1080×1920) çizer: üstte topluluk ve oyun adı, oyundaki çentikli kadranın
+// içinde logo, unvan plakası, ad, dev süre, üç ölçü ve etiketler. Vurgu rengi unvandan gelir.
+// v: sonKart ya da kayitKarti() çıktısı.
+// tuval verilmezse yeni bir tuval açılır (indirme ve e-posta için). seffaf: zemin boyanmaz;
+// sonuç ekranında kartın arkasındaki buzlu cam görünsün diye.
+function kartiCiz(v, tuval = document.createElement('canvas'), seffaf = false) {
+  const EN = 1080, BOY = 1920, ORTA = EN / 2;
+  const BASLIK = 'Bahnschrift, "Segoe UI", sans-serif';
+  const YAZI = '"Segoe UI", system-ui, sans-serif';
+  const KOD = '"Cascadia Code", Consolas, "Courier New", monospace';
+  const BUZ = '#a9e4f8', MAVI = '#5aa7ff', SOLUK = 'rgba(255, 255, 255, .62)', CIZGI = 'rgba(255, 255, 255, .18)';
+  const LOGO_Y = 520;   // logonun ve kadranın merkezi
+  tuval.width = EN;     // boyut atamak tuvali de temizler
+  tuval.height = BOY;
+  const c = tuval.getContext('2d');
+
+  // Yazı: px boyuyla başlar, enCok genişliğine sığana kadar küçülür. isik: yazının arkasındaki parlama.
+  const yaz = (metin, x, y, px, renk, { font = BASLIK, kalin = 700, aralik = 0, hiza = 'center', enCok = EN - 180, isik = 0 } = {}) => {
+    c.letterSpacing = aralik + 'px';
+    c.font = kalin + ' ' + px + 'px ' + font;
+    while (c.measureText(metin).width > enCok && px > 24) c.font = kalin + ' ' + --px + 'px ' + font;
+    c.textAlign = hiza;
+    c.fillStyle = renk;
+    c.shadowColor = MAVI;
+    c.shadowBlur = isik;
+    c.fillText(metin, x, y);
+    c.shadowBlur = 0;
+  };
+  const olc = (metin, px, aralik = 0) => {
+    c.letterSpacing = aralik + 'px';
+    c.font = '700 ' + px + 'px ' + BASLIK;
+    return c.measureText(metin).width;
+  };
+  const yatayCizgi = (y) => { c.fillStyle = CIZGI; c.fillRect(84, y, EN - 168, 2); };
+
+  // Zemin: koyu lacivert. Üstünde logonun ışığı ve çok silik bir doku olarak oyuncunun yazdığı program.
+  if (!seffaf) {
+    const zemin = c.createLinearGradient(0, 0, 0, BOY);
+    zemin.addColorStop(0, '#0e1d47');
+    zemin.addColorStop(.5, '#081027');
+    zemin.addColorStop(1, '#060b18');
+    c.fillStyle = zemin;
+    c.fillRect(0, 0, EN, BOY);
+  }
+  const isik = c.createRadialGradient(ORTA, LOGO_Y, 0, ORTA, LOGO_Y, 760);
+  isik.addColorStop(0, 'rgba(63, 134, 236, .55)');
+  isik.addColorStop(1, 'rgba(63, 134, 236, 0)');
+  c.fillStyle = isik;
+  c.fillRect(0, 0, EN, 1300);
+  c.letterSpacing = '0px';
+  c.font = '600 34px ' + KOD;
+  c.textAlign = 'left';
+  // Doku yukarıda belirgin, aşağı indikçe silinir: adın ve rakamların arkasına karışmasın
+  for (let satir = 0; satir < 15; satir++) {
+    c.fillStyle = 'rgba(169, 228, 248, ' + (.07 - satir * .0045) + ')';
+    c.fillText(PROGRAM[satir % PROGRAM.length].kod, 84, 222 + satir * 64);
+  }
+
+  // Çerçeve: ince çizgi, köşelerde unvanın renginde köşe işaretleri
+  c.strokeStyle = 'rgba(169, 228, 248, .3)';
+  c.lineWidth = 2;
+  c.beginPath();
+  c.roundRect(34, 34, EN - 68, BOY - 68, 56);
+  c.stroke();
+  c.strokeStyle = v.renk;
+  c.lineWidth = 6;
+  c.lineCap = 'round';
+  [[34, 34, 1, 1], [EN - 34, 34, -1, 1], [34, BOY - 34, 1, -1], [EN - 34, BOY - 34, -1, -1]].forEach(([x, y, sx, sy]) => {
+    c.beginPath();
+    c.moveTo(x, y + sy * 150);
+    c.arcTo(x, y, x + sx * 150, y, 56);
+    c.lineTo(x + sx * 150, y);
+    c.stroke();
+  });
+
+  // Üst satır: topluluk ve oyunun adı
+  yaz('YAZILIM MÜHENDİSLİĞİ TOPLULUĞU', 84, 128, 30, '#fff', { aralik: 4, hiza: 'left', enCok: 620 });
+  yaz('LOGOYU KODLA', EN - 84, 128, 30, v.renk, { aralik: 6, hiza: 'right', enCok: 260 });
+  yatayCizgi(158);
+
+  // Logo: oyundaki kadranın içinde. Dışa yayılan silik halkalar, 100 çentik (her onuncusu uzun), ışıklı beyaz halka.
+  c.lineWidth = 2;
+  [330, 410, 490, 570].forEach((r, i) => {
+    c.strokeStyle = 'rgba(169, 228, 248, ' + (.11 - i * .025) + ')';
+    c.beginPath();
+    c.arc(ORTA, LOGO_Y, r, 0, Math.PI * 2);
+    c.stroke();
+  });
+  c.strokeStyle = v.renk;
+  c.lineCap = 'butt';
+  for (let i = 0; i < 100; i++) {
+    const aci = i / 100 * Math.PI * 2;
+    const uzun = i % 10 === 0;
+    c.lineWidth = uzun ? 7 : 4;
+    c.beginPath();
+    c.moveTo(ORTA + Math.sin(aci) * (uzun ? 226 : 234), LOGO_Y - Math.cos(aci) * (uzun ? 226 : 234));
+    c.lineTo(ORTA + Math.sin(aci) * 258, LOGO_Y - Math.cos(aci) * 258);
+    c.stroke();
+  }
+  c.shadowColor = MAVI;
+  c.shadowBlur = 80;
+  c.fillStyle = '#fff';
+  c.beginPath();
+  c.arc(ORTA, LOGO_Y, 196, 0, Math.PI * 2);
+  c.fill();
+  c.shadowBlur = 0;
+  c.drawImage(kartLogo, ORTA - 190, LOGO_Y - 190, 380, 380);
+
+  // Unvan plakası: kadranın altına hafifçe biner; unvanın renginde, köşeleri kesik
+  const unvan = v.unvan.toUpperCase();
+  const plakaEn = Math.min(olc(unvan, 46, 6) + 120, EN - 200);
+  const sol = ORTA - plakaEn / 2, sag = ORTA + plakaEn / 2, ust = 752, alt = 836, kesik = 24;
+  c.fillStyle = v.renk;
+  c.beginPath();
+  c.moveTo(sol + kesik, ust);
+  c.lineTo(sag, ust);
+  c.lineTo(sag, alt - kesik);
+  c.lineTo(sag - kesik, alt);
+  c.lineTo(sol, alt);
+  c.lineTo(sol, ust + kesik);
+  c.closePath();
+  c.fill();
+  yaz(unvan, ORTA + 3, 811, 46, '#0b1226', { aralik: 6, enCok: plakaEn - 70 });
+
+  // Ödül rozeti (ilk üçte ya da hatasız ödülünde): plakanın altında ince çerçeveli etiket
+  if (v.rozet) {
+    const rozet = v.rozet.toLocaleUpperCase('tr');
+    const renk = { 1: '#f3c04a', 2: '#c7d1df', 3: '#dc8f55', hatasiz: '#4fd896' }[v.rozetTuru];   // altın, gümüş, bronz, yeşil
+    const en = olc(rozet, 30, 5) + 56;
+    c.strokeStyle = renk;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.roundRect(ORTA - en / 2, 866, en, 56, 12);
+    c.stroke();
+    yaz(rozet, ORTA + 2, 905, 30, renk, { aralik: 5 });
+  }
+
+  // Ad: büyük harfle. Tek satıra sığmayacak kadar uzunsa ad ve soyad ayrı satırlara yazılır.
+  const ad = v.ad.toLocaleUpperCase('tr');
+  const soyad = v.soyad.toLocaleUpperCase('tr');
+  const adY = v.rozet ? 1040 : 1010;
+  const tekSatir = olc(ad + ' ' + soyad, 60, 1) <= EN - 180;
+  if (tekSatir) {
+    yaz(ad + ' ' + soyad, ORTA, adY, 88, '#fff', { aralik: 1 });
+  } else {
+    yaz(ad, ORTA, adY - 34, 68, '#fff', { aralik: 1 });
+    yaz(soyad, ORTA, adY + 42, 68, '#fff', { aralik: 1 });
+  }
+  yaz(v.altYazi, ORTA, adY + (tekSatir ? 62 : 100), 32, SOLUK, { font: YAZI, kalin: 400 });
+
+  // Süre (bitiremeyende tamamlanan yüzde): kartın en büyük yazısı, altında unvanın renginde kısa çizgi
+  yaz(v.buyuk, ORTA, v.ek ? 1375 : 1400, 250, '#fff', { enCok: EN - 200, isik: 22 });
+  if (v.ek) yaz(v.ek.toLocaleUpperCase('tr'), ORTA, 1432, 34, SOLUK, { kalin: 600, aralik: 8 });
+  c.fillStyle = v.renk;
+  c.fillRect(ORTA - 60, v.ek ? 1458 : 1440, 120, 6);
+
+  // Üç ölçü: hız, sıra, hata
+  yatayCizgi(1508);
+  [['WPM', v.wpm], ['SIRA', v.sira], ['HATA', v.hata]].forEach(([etiket, deger], i) => {
+    const x = 236 + i * 304;
+    yaz(String(deger), x, 1612, 84, '#fff', { enCok: 250 });
+    yaz(etiket, x + 3, 1662, 28, SOLUK, { kalin: 600, aralik: 6, enCok: 250 });
+    if (i) { c.fillStyle = CIZGI; c.fillRect(x - 153, 1536, 2, 134); }
+  });
+
+  // Alt bölüm: etiketler. Sponsor varsa etiketler sola iki satır olarak geçer, sağda sponsorun logosu durur.
+  yatayCizgi(1706);
+  if (SPONSOR_ADI && sponsorLogo.naturalWidth) {
+    const boy = 112, en = Math.round(boy * sponsorLogo.naturalWidth / sponsorLogo.naturalHeight);
+    // Etiketler logonun solunda kalan alanın ortasına hizalanır: iki satır da aynı eksende durur
+    const orta = Math.ceil(KART_ETIKETLERI.length / 2);
+    const alanSagi = EN - 84 - en - 40;
+    const etiket = { font: KOD, kalin: 600, enCok: alanSagi - 84 };
+    yaz(KART_ETIKETLERI.slice(0, orta).join('  '), (84 + alanSagi) / 2, 1783, 34, BUZ, etiket);
+    yaz(KART_ETIKETLERI.slice(orta).join('  '), (84 + alanSagi) / 2, 1839, 34, BUZ, etiket);
+    yaz('ÖDÜL SPONSORU', EN - 84, 1741, 22, SOLUK, { kalin: 600, aralik: 4, hiza: 'right', enCok: 300 });
+    c.save();
+    c.beginPath();
+    c.roundRect(EN - 84 - en, 1754, en, boy, 12);
+    c.clip();
+    c.drawImage(sponsorLogo, EN - 84 - en, 1754, en, boy);
+    c.restore();
+  } else {
+    yaz(KART_ETIKETLERI.join('   '), ORTA, 1790, 36, BUZ, { font: KOD, kalin: 600 });
+  }
+  return tuval;
+}
+// Kartı JPG olarak indirir (PNG'nin altıda biri kadar yer tutar, e-postaya uygun). Dosya adında
+// öğrenci numarası vardır; kayıtlardaki (F2 > CSV indir) e-posta adresiyle onun üzerinden eşleştirilir.
+// btn: basılan "Kartı indir" düğmesi
+function kartiIndir(v, btn) {
+  kartiCiz(v).toBlob((blob) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = kartDosyaAdi(v);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    // Tam ekranda tarayıcının indirme bildirimi görünmez; indiğini düğme söyler
+    btn.textContent = 'İndirildi';
+    setTimeout(() => { btn.textContent = 'Kartı indir'; }, 3000);
+  }, 'image/jpeg', .92);
+}
+
+function kartDosyaAdi(v) {
+  return ('ymt-kart-' + v.no + '-' + v.ad + '-' + v.soyad).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '-') + '.jpg';
+}
+
+// Kartı oyuncunun e-posta adresine yollar (bkz. AYARLAR'da KART E-POSTASI).
+// Servis kuruluysa kart topluluğun hesabından ekte gider ve gönderildiği kayda işlenir. Kurulu
+// değilse Gmail'de hazır bir taslak açılır ve kart indirilir; dosyayı ekleyip göndermek elle yapılır.
+// btn: basılan "Gönder" düğmesi; indirBtn: aynı satırdaki "Kartı indir" düğmesi
+async function kartiGonder(no, btn, indirBtn) {
+  const kayit = kayitlariOku().find((k) => k.no === no);
+  const v = kayitKarti(no);
+  const mesaj = EPOSTA_MESAJI.replaceAll('{ad}', kayit.ad)
+    .replaceAll('{sonuc}', v.buyuk + (v.ek ? ' ' + v.ek : ''))
+    .replaceAll('{etiketler}', KART_ETIKETLERI.join(' '));
+  if (!EPOSTA_SERVISI) {
+    kartiIndir(v, indirBtn);
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(kayit.eposta)
+      + '&su=' + encodeURIComponent(EPOSTA_KONUSU) + '&body=' + encodeURIComponent(mesaj), '_blank');
+    panelDurumu('Taslak yeni sekmede açıldı ve kart indirildi. İndirilen dosyayı taslağa ekleyip gönder.');
+    return;
+  }
+  // E-postanın biçimli hâli: mesaj paragraflara bölünür, altına topluluğun imzası gelir.
+  // Oyuncunun yazdığı ad HTML olarak yorumlanmasın diye mesaj önce kaçışlanır.
+  const kacisli = mesaj.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const mesajHtml = EPOSTA_IMZASI && '<div style="max-width:600px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#202124">'
+    + kacisli.split('\n\n').map((paragraf) => '<p style="margin:0 0 16px">' + paragraf.replaceAll('\n', '<br>') + '</p>').join('')
+    + EPOSTA_IMZASI + '</div>';
+  // Düz metin hâli (HTML göstermeyen programlar için): mesajın altına imzanın yazıları gelir
+  const mesajDuz = mesaj + '\n' + EPOSTA_IMZASI.replace(/<br>|<\/div>/g, '\n').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  const asilYazi = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Gönderiliyor';
+  try {
+    const yanit = await fetch(EPOSTA_SERVISI, {
+      method: 'POST',
+      // text/plain: tarayıcı önce ayrı bir izin isteği (preflight) göndermesin diye; servis onu yanıtlamaz
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        anahtar: EPOSTA_ANAHTARI, kime: kayit.eposta, konu: EPOSTA_KONUSU, mesaj: mesajDuz, mesajHtml,
+        dosyaAdi: kartDosyaAdi(v),
+        gorsel: kartiCiz(v).toDataURL('image/jpeg', .92).split(',')[1],   // görselin base64 hâli
+      }),
+    });
+    const sonuc = await yanit.json();
+    if (!sonuc.ok) throw new Error(sonuc.hata);
+    const kayitlar = kayitlariOku();
+    kayitlar.find((k) => k.no === no).kartGonderim = new Date().toISOString();
+    kayitlariYaz(kayitlar);
+    paneliCiz();
+    panelDurumu('Kart ' + kayit.eposta + ' adresine gönderildi. Bugün ' + sonuc.kalan + ' e-posta daha gönderilebilir.');
+  } catch (hata) {
+    btn.disabled = false;
+    btn.textContent = asilYazi;
+    panelDurumu('Gönderilemedi (' + hata.message + '). İnternet bağlantısını ve servis kurulumunu kontrol et.', true);
+  }
+}
+
+// Panelin üstündeki durum satırı: gönderim sonucu
+function panelDurumu(metin, hata) {
+  $('panelDurum').textContent = metin;
+  $('panelDurum').classList.toggle('hata', Boolean(hata));
+}
+
+$('kartIndirBtn').addEventListener('click', (e) => {
+  kartiIndir(sonKart, e.currentTarget);
+  $('sonrakiBtn').focus();   // Enter yine sıradaki yarışmacıya geçsin
+});
+
+/* ---------- Yedekleme ----------
+   Kayıtlar dosyada değil tarayıcının hafızasında durur: index.html silinse ya da taşınsa bile aynı
+   tarayıcıda yerlerinde kalırlar. Onları tehdit eden şeyler yanlışlıkla silme, tarayıcı verilerinin
+   temizlenmesi ve başka bir tarayıcıya ya da bilgisayara geçilmesidir. Buna karşı iki önlem var:
+    1. Geri alma kopyası: panelde kayıt silen her işlemden hemen önce o anki kayıtlar tarayıcıda
+       saklanır (son 3 işlem). "Son işlemi geri al" tek tıkla döndürür.
+    2. Yedek dosyası: kayıtların tamamı .json olarak indirilir; OTOMATIK_YEDEK_ARALIGI oyunda bir
+       kendiliğinden, kayıtları toptan silen işlemlerden hemen önce ve panelden istenince.
+       "Yedekten yükle" dosyadaki kayıtları geri getirir. */
+
+const YEDEK_KEY = STORAGE_KEY + '_yedek';   // son yedek dosyasının zamanı ve ondan beri biten oyun sayısı
+const GERI_KEY = STORAGE_KEY + '_geri';     // geri alma kopyaları
+
+function kisaTarih(iso) {
+  return new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function yedekBilgisi() {
+  try { return JSON.parse(localStorage.getItem(YEDEK_KEY)) || {}; } catch { return {}; }
+}
+
+function geriKopyalari() {
+  try { return JSON.parse(localStorage.getItem(GERI_KEY)) || []; } catch { return []; }
+}
+
+// Kayıtların tamamını bir dosya olarak indirir; dosyanın adını döndürür
+function yedekIndir(neden) {
+  const kayitlar = kayitlariOku();
+  const simdi = new Date();
+  const iki = (n) => String(n).padStart(2, '0');
+  const damga = simdi.getFullYear() + '-' + iki(simdi.getMonth() + 1) + '-' + iki(simdi.getDate())
+    + '-' + iki(simdi.getHours()) + iki(simdi.getMinutes()) + iki(simdi.getSeconds());
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ uygulama: STORAGE_KEY, zaman: simdi.toISOString(), neden, kayitlar })], { type: 'application/json' }));
+  a.download = 'ymt-yedek-' + damga + '-' + kayitlar.length + '-kayit.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  localStorage.setItem(YEDEK_KEY, JSON.stringify({ zaman: simdi.toISOString(), adet: kayitlar.length, bekleyen: 0 }));
+  return a.download;
+}
+
+// Her oyundan sonra çağrılır (biten, süresi dolan ya da vazgeçilen); aralık dolduysa yedek dosyasını indirir
+function oyunSonrasiYedek() {
+  if (!OTOMATIK_YEDEK_ARALIGI) return;
+  const bilgi = yedekBilgisi();
+  bilgi.bekleyen = (bilgi.bekleyen || 0) + 1;
+  if (bilgi.bekleyen >= OTOMATIK_YEDEK_ARALIGI) yedekIndir('otomatik');
+  else localStorage.setItem(YEDEK_KEY, JSON.stringify(bilgi));
+}
+
+// Panelde kayıt silen ya da değiştiren bir işlemden hemen önce çağrılır. Kopya yer tutmasın diye tuş
+// zamanları (iz) yalnızca ilk üçte kalır: hayalet imleç lideri kullanır, öbürlerinin izi gerekmez.
+function geriKopyasiAl(neden) {
+  const ilkUc = siralananlar().slice(0, 3).map((k) => k.no);
+  const kayitlar = kayitlariOku().map(({ iz, ...k }) => (ilkUc.includes(k.no) ? { ...k, iz } : k));
+  const kopya = { zaman: new Date().toISOString(), neden, kayitlar };
+  try {
+    localStorage.setItem(GERI_KEY, JSON.stringify([...geriKopyalari(), kopya].slice(-3)));
+  } catch {
+    // Tarayıcının ayırdığı yer dolduysa eskiler bırakılır, yalnızca bu kopya saklanır
+    try { localStorage.setItem(GERI_KEY, JSON.stringify([kopya])); } catch { /* yedek dosyası yine de var */ }
+  }
+}
+
+// Kayıtları toptan değiştiren işlemlerden önce: tarayıcıda geri alma kopyası ve yedek dosyası
+function korumaAl(neden) {
+  if (!kayitlariOku().length) return;
+  geriKopyasiAl(neden);
+  yedekIndir(neden + ' öncesi');
+}
+
+// Son geri alma kopyasını yerine koyar. Şimdiki kayıtlar da kaybolmasın diye önce dosyaya yedeklenir.
+function geriAl() {
+  const kopyalar = geriKopyalari();
+  const son = kopyalar.pop();
+  if (!son) return;
+  if (kayitlariOku().length) yedekIndir('geri alma öncesi');
+  kayitlariYaz(son.kayitlar);
+  localStorage.setItem(GERI_KEY, JSON.stringify(kopyalar));
+  paneliCiz();
+  liderligiCiz();
+  bolumleriDoldur();
+  panelDurumu('Geri alındı: "' + son.neden + '" öncesindeki ' + son.kayitlar.length + ' kayıt yerinde.');
+}
+
+// Aynı öğrencinin iki kaydını birleştirir: sonucu olan, iki sonuçtan da iyi olan kalır; hatasız süre,
+// kullanılan hak, e-posta ve kartın gönderildiği bilgisi ikisinden de korunur
+function kayitBirlestir(a, b) {
+  const sonuclu = (k) => k.durum === 'bitti' || k.durum === 'doldu';
+  const iyi = !sonuclu(b) ? a : !sonuclu(a) ? b : sirala(a, b) <= 0 ? a : b;
+  const hatasiz = Math.min(hatasizSure(a) || Infinity, hatasizSure(b) || Infinity);
+  const kalan = { ...iyi, deneme: Math.max(a.deneme || 1, b.deneme || 1), eposta: iyi.eposta || a.eposta || b.eposta || '' };
+  if (hatasiz < Infinity) kalan.hatasizMs = hatasiz;
+  if (a.kartGonderim || b.kartGonderim) kalan.kartGonderim = a.kartGonderim || b.kartGonderim;
+  return kalan;
+}
+
+// Yedek dosyasındaki kayıtları buradakilerle birleştirir: yedekte olup burada olmayan eklenir, ikisinde
+// de olan öğrencide iyi sonuç kalır. Hiçbir kayıt silinmez; boş tarayıcıya yüklenince yedeğin aynısı gelir.
+async function yedektenYukle(dosya) {
+  let yedek = null;
+  try { yedek = JSON.parse(await dosya.text()); } catch { /* aşağıda "yedek değil" denir */ }
+  if (!yedek || yedek.uygulama !== STORAGE_KEY || !Array.isArray(yedek.kayitlar)) {
+    panelDurumu('Bu dosya bir Logoyu Kodla yedeği değil.', true);
+    return;
+  }
+  const gelen = yedek.kayitlar.filter((k) => k && typeof k.no === 'string' && k.ad && k.tarih);
+  geriKopyasiAl('Yedekten yükleme');
+  const kayitlar = kayitlariOku();
+  let eklenen = 0;
+  gelen.forEach((g) => {
+    const i = kayitlar.findIndex((k) => k.no === g.no);
+    if (i < 0) { kayitlar.push(g); eklenen++; } else kayitlar[i] = kayitBirlestir(kayitlar[i], g);
+  });
+  kayitlariYaz(kayitlar);
+  paneliCiz();
+  liderligiCiz();
+  bolumleriDoldur();
+  panelDurumu(kisaTarih(yedek.zaman) + ' tarihli yedek yüklendi: ' + eklenen + ' kayıt eklendi, ' + (gelen.length - eklenen) + ' kayıt buradakiyle birleştirildi.');
+}
+
+// Paneldeki yedek şeridi: son yedeğin zamanı, sıradaki otomatik yedek ve geri alınabilecek işlem
+function yedekDurumunuYaz() {
+  const bilgi = yedekBilgisi();
+  const geri = geriKopyalari().pop();
+  let metin = bilgi.zaman ? 'Son yedek dosyası: ' + kisaTarih(bilgi.zaman) + ', ' + bilgi.adet + ' kayıt.' : 'Henüz yedek dosyası alınmadı.';
+  if (OTOMATIK_YEDEK_ARALIGI) metin += ' Sıradaki otomatik yedek ' + (OTOMATIK_YEDEK_ARALIGI - (bilgi.bekleyen || 0)) + ' oyun sonra.';
+  if (geri) metin += ' Geri alınabilir: "' + geri.neden + '" (' + kisaTarih(geri.zaman) + ', ' + geri.kayitlar.length + ' kayıt).';
+  $('yedekDurum').textContent = metin;
+  $('geriAlBtn').hidden = !geri;
+}
+
+$('yedekAlBtn').addEventListener('click', () => {
+  panelDurumu('Yedek indirildi: ' + yedekIndir('elle'));
+  yedekDurumunuYaz();
+});
+$('yedekYukleBtn').addEventListener('click', () => $('yedekDosya').click());
+$('yedekDosya').addEventListener('change', (e) => {
+  if (e.target.files[0]) yedektenYukle(e.target.files[0]);
+  e.target.value = '';   // aynı dosya yeniden seçilebilsin
+});
+$('geriAlBtn').addEventListener('click', (e) => ikiTikla(e.currentTarget, geriAl));
+
+/* ---------- Yönetim paneli ---------- */
+
+function yonetimiKapat() {
+  $('yonetim').hidden = true;
+  $('ad').focus();
+}
+
+// Kayıt tablosu. Süzgeçler (panelSuzgec): tüm kayıtlar, ödül alan ilk üç, hatasız ödülü sıralaması.
+function paneliCiz() {
+  document.querySelectorAll('.suzgec').forEach((btn) => btn.classList.toggle('secili', btn.dataset.suzgec === panelSuzgec));
+  const tum = panelSuzgec === 'ilk3' ? siralananlar().slice(0, 3)
+    : panelSuzgec === 'hatasiz' ? hatasizlar()
+    : tumKayitlar();
+  $('panelNot').textContent = {
+    tum: '',
+    ilk3: 'Ödül alacak ilk üç kişi.',
+    hatasiz: 'İlk üç dışında programı 0 hatayla bitirenler, hızlıdan yavaşa. İlk satırdaki kişi özel ödülü alır. Sonuç, hatasız denemesinin süresidir.',
+  }[panelSuzgec];
+  $('panelBos').textContent = panelSuzgec === 'hatasiz' ? 'İlk üç dışında hatasız bitiren henüz yok.' : 'Kayıt yok.';
+  const govde = $('kayitGovde');
+  govde.textContent = '';
+  tum.forEach((k, i) => {
+    const sirada = k.durum !== 'basladi';
+    const tr = document.createElement('tr');
+    if (panelSuzgec === 'hatasiz' && i === 0) tr.className = 'odullu';
+    [
+      sirada ? i + 1 : '-',
+      k.ad + ' ' + k.soyad,
+      k.no,
+      k.bolum || '-',
+      sirada ? sonucYaz(k) : 'Yarıda bıraktı',
+      sirada ? k.wpm : '-',
+      sirada ? k.hata : '-',
+      (k.deneme || 1) + '/' + (k.uye ? HAK_UYE : HAK_UYE_OLMAYAN),
+      k.uye ? 'Evet' : 'Hayır',
+      k.eposta || '-',
+      // Tablo ekrana sığsın diye yalnızca gün, ay, saat ve dakika; tam tarih CSV'de
+      kisaTarih(k.tarih),
+    ].forEach((deger) => tr.appendChild(parca('td', '', deger)));
+
+    const sil = parca('button', 'ikincil-btn kucuk', 'Sil');
+    sil.type = 'button';
+    sil.addEventListener('click', () => ikiTikla(sil, () => {
+      geriKopyasiAl(k.ad + ' ' + k.soyad + ' kaydını silme');
+      kayitlariYaz(kayitlariOku().filter((x) => x.no !== k.no));
+      paneliCiz();
+      liderligiCiz();
+    }));
+    // Bölümü düzelt: satırın bölüm hücresi yazı kutusuna döner; Enter ya da Kaydet uygular, Esc vazgeçer
+    const duzelt = parca('button', 'ikincil-btn kucuk', 'Bölümü düzelt');
+    duzelt.type = 'button';
+    duzelt.addEventListener('click', () => {
+      const hucre = tr.children[3];
+      const acik = hucre.querySelector('input');
+      if (acik) { bolumuKaydet(k.no, acik.value); return; }
+      const kutu = document.createElement('input');
+      kutu.type = 'text';
+      kutu.maxLength = 40;
+      kutu.value = k.bolum || '';
+      kutu.setAttribute('list', 'bolumOneri');
+      kutu.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') bolumuKaydet(k.no, kutu.value);
+        else if (e.key === 'Escape') { e.stopPropagation(); paneliCiz(); }   // panel kapanmasın, yalnızca düzeltme iptal olsun
+      });
+      hucre.textContent = '';
+      hucre.appendChild(kutu);
+      duzelt.textContent = 'Kaydet';
+      kutu.focus();
+      kutu.select();
+    });
+
+    const td = document.createElement('td');
+    // Kartı indir: oyun sonunda indirilmemiş kart buradan, güncel sıralamaya göre yeniden üretilir.
+    // Yarıda bırakanın sonucu olmadığı için kartı da olmaz.
+    if (sirada) {
+      const kart = parca('button', 'ikincil-btn kucuk', 'Kartı indir');
+      kart.type = 'button';
+      kart.addEventListener('click', () => kartiIndir(kayitKarti(k.no), kart));
+      td.appendChild(kart);
+      // Gönder: kartı oyuncunun e-postasına yollar; adres yazmamış oyuncuda çıkmaz.
+      // Daha önce gönderilmişse düğme bunu söyler ve yeniden göndermeden önce sorar.
+      if (k.eposta) {
+        const gonder = parca('button', 'ikincil-btn kucuk' + (k.kartGonderim ? ' gonderildi' : ''), k.kartGonderim ? 'Gönderildi' : 'Gönder');
+        gonder.type = 'button';
+        gonder.addEventListener('click', () => {
+          const yolla = () => kartiGonder(k.no, gonder, kart);
+          if (k.kartGonderim) ikiTikla(gonder, yolla);
+          else yolla();
+        });
+        td.appendChild(gonder);
+      }
+    }
+    td.append(duzelt, sil);
+    tr.appendChild(td);
+    govde.appendChild(tr);
+  });
+  $('panelBos').hidden = tum.length > 0;
+  $('bolumOneri').replaceChildren(...bolumListesi().map((b) => new Option(b, b)));
+  yedekDurumunuYaz();
+}
+
+// Görevlinin yazdığı ad olduğu gibi kaydedilir (boşsa değişiklik yapılmaz); bölüm tablosu ve giriş listesi yenilenir
+function bolumuKaydet(no, metin) {
+  const bolum = metin.trim().replace(/\s+/g, ' ');
+  if (bolum) {
+    const kayitlar = kayitlariOku();
+    kayitlar.find((k) => k.no === no).bolum = bolum;
+    kayitlariYaz(kayitlar);
+    liderligiCiz();
+    bolumleriDoldur();
+  }
+  paneliCiz();
+}
+
+function csvIndir() {
+  const durumlar = { bitti: 'Bitirdi', doldu: 'Süre doldu', basladi: 'Yarıda bıraktı' };
+  const saniye = (ms) => (ms / 1000).toFixed(3).replace('.', ',');
+  const satirlarCsv = [['Sıra', 'Ad', 'Soyad', 'Öğrenci No', 'E-posta', 'Bölüm', 'Durum', 'Süre (sn)', 'Tamamlanan (%)', 'WPM', 'Hata', 'Hatasız süre (sn)', 'Ödül', 'Kullanılan hak', 'Üye', 'Tarih', 'Kart gönderildi']];
+  const hatasizBirinci = hatasizlar()[0];
+  tumKayitlar().forEach((k, i) => {
+    const sirada = k.durum !== 'basladi';
+    satirlarCsv.push([
+      sirada ? i + 1 : '',
+      k.ad, k.soyad, k.no, k.eposta || '', k.bolum || '',
+      durumlar[k.durum],
+      sirada ? saniye(k.sureMs) : '',
+      sirada ? k.yuzde : '',
+      sirada ? k.wpm : '',
+      sirada ? k.hata : '',
+      hatasizSure(k) ? saniye(hatasizSure(k)) : '',
+      sirada && i < 3 ? 'İlk 3' : hatasizBirinci && hatasizBirinci.no === k.no ? 'Hatasız en hızlı' : '',
+      k.deneme || 1,
+      k.uye ? 'Evet' : 'Hayır',
+      new Date(k.tarih).toLocaleString('tr-TR'),
+      k.kartGonderim ? new Date(k.kartGonderim).toLocaleString('tr-TR') : '',
+    ]);
+  });
+  // Türkçe Excel için: ayraç noktalı virgül, başta UTF-8 BOM
+  const metin = satirlarCsv.map((s) => s.map((h) => '"' + String(h).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + metin], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'ymt-logoyu-kodla-sonuclar.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F2' && durum === 'giris' && $('yonetim').hidden) {
+    e.preventDefault();
+    $('pinForm').hidden = false;
+    $('panel').hidden = true;
+    $('pinForm').reset();
+    $('pinUyari').textContent = '';
+    $('yonetim').hidden = false;
+    $('pin').focus();
+  } else if (e.key === 'Escape' && !$('yonetim').hidden) {
+    yonetimiKapat();
+  }
+});
+
+$('pinForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if ($('pin').value !== ADMIN_PIN) {
+    $('pinUyari').textContent = 'PIN yanlış.';
+    $('pin').select();
+    return;
+  }
+  $('pinForm').hidden = true;
+  $('panel').hidden = false;
+  panelDurumu('');
+  paneliCiz();
+});
+
+document.querySelectorAll('[data-kapat]').forEach((btn) => btn.addEventListener('click', yonetimiKapat));
+document.querySelectorAll('.suzgec').forEach((btn) => btn.addEventListener('click', () => {
+  panelSuzgec = btn.dataset.suzgec;
+  paneliCiz();
+}));
+$('csvBtn').addEventListener('click', csvIndir);
+$('sifirlaBtn').addEventListener('click', (e) => ikiTikla(e.currentTarget, () => {
+  const adet = kayitlariOku().length;
+  korumaAl('Tüm kayıtları silme');
+  kayitlariYaz([]);
+  paneliCiz();
+  liderligiCiz();
+  if (adet) panelDurumu(adet + ' kayıt silindi. Yanlışlıkla olduysa "Son işlemi geri al" ile döndürebilirsin; yedek dosyası da indirildi.');
+}));
+
+// TEST GRUBU: bütün kayıtları silip yerine 10 kişilik bir deneme listesi koyar; sıralama, hatasız
+// ödülü ve panel her durumda doğru çalışıyor mu diye bakmak içindir. Adlar, kişinin hangi durumu
+// denediğini söyler. Stanttan önce "Tüm kayıtları sil" ile temizlemeyi unutma.
+function testGrubunuYukle() {
+  const tuslar = PROGRAM.reduce((toplam, adim) => toplam + adim.kod.trim().length + 1, 0);   // programın tuş sayısı, Enter'lar dahil
+  // [ad, soyad, üye mi, süre (sn; 0: süresi doldu), hata, ayrıca hatasız bitirdiği denemenin süresi (sn; yoksa 0)]
+  const kisiler = [
+    ['Birinci', 'Hatasız', true, 31.204, 0, 0],            // ilk üçte ve hatasız: yalnızca ilk üçte görünür
+    ['İkinci', 'İki Denemeli', true, 36.118, 2, 41.53],    // ilk üçte; hatalı ve hatasız iki denemesi var: yalnızca ilk üçte görünür
+    ['Üçüncü', 'Hatalı', false, 39.87, 3, 0],
+    ['Dördüncü', 'İki Denemeli', true, 44.012, 1, 52.3],   // sıralamada hatalı denemesi, hatasız ödülünde 52,3 sn'lik hatasız denemesi
+    ['Beşinci', 'Hatasız', false, 47.455, 0, 0],           // ilk üç dışındaki en hızlı hatasız: özel ödül onda
+    ['Altıncı', 'Hatalı', false, 50.731, 4, 0],
+    ['Yedinci', 'Hatasız', false, 58.09, 0, 0],
+    ['Sekizinci', 'Hatalı', false, 69.64, 7, 0],
+    ['Süresi Dolan', 'Hatasız', false, 0, 0, 0],           // hata yapmadı ama bitiremedi: hatasız ödülüne giremez
+  ];
+  const kayitlar = kisiler.map(([ad, soyad, uye, sn, hata, hatasizSn], i) => {
+    const bitti = sn > 0;
+    const sureMs = bitti ? Math.round(sn * 1000) : SURE_SINIRI_SN * 1000;
+    const ilerleme = bitti ? tuslar : Math.round(tuslar * .63);
+    const kayit = {
+      no: String(900001 + i), ad, soyad, eposta: i % 2 ? '' : 'test' + (i + 1) + '@ornek.com', uye,
+      bolum: BOLUMLER[i % BOLUMLER.length], deneme: hatasizSn ? 2 : 1,
+      durum: bitti ? 'bitti' : 'doldu', sureMs, ilerleme, yuzde: Math.floor(ilerleme / tuslar * 100),
+      wpm: Math.round(ilerleme / 5 / (sureMs / 60000)), hata,
+      tarih: new Date(Date.now() - (kisiler.length - i) * 60000).toISOString(),
+      iz: Array.from({ length: ilerleme }, (_, tus) => Math.round((tus + 1) * sureMs / ilerleme)),   // eşit aralıklı tuşlar: lider hayaleti için
+    };
+    if (bitti && (hata === 0 || hatasizSn)) kayit.hatasizMs = Math.round((hatasizSn || sn) * 1000);
+    return kayit;
+  });
+  kayitlar.push({ no: '900010', ad: 'Yarıda', soyad: 'Bırakan', eposta: '', uye: false, bolum: BOLUMLER[0], deneme: 1, durum: 'basladi', tarih: new Date().toISOString() });
+  kayitlariYaz(kayitlar);
+  paneliCiz();
+  liderligiCiz();
+  bolumleriDoldur();
+}
+$('testBtn').addEventListener('click', (e) => ikiTikla(e.currentTarget, () => {
+  korumaAl('Test grubu yükleme');
+  testGrubunuYukle();
+}));
+
+/* ---------- Boşta gösteri: program kendi kendine yazılır ---------- */
+
+function gosteriBaslat() {
+  durum = 'gosteri';
+  document.body.classList.add('gosteride');
+  sahneyiKur();
+  gosteriAdim();
+}
+
+function gosteriAdim() {
+  if (ilerle()) {
+    logoTamam();
+    gosteriZamanlayici = setTimeout(gosteriBaslat, 4000);
+  } else {
+    gosteriZamanlayici = setTimeout(gosteriAdim, 70 + Math.random() * 90);
+  }
+}
+
+function gosteridenCik(e) {
+  if (durum !== 'gosteri') return;
+  if (e.type === 'keydown' && (e.key.length === 1 || e.key === 'Enter')) e.preventDefault();   // basılan tuş Ad kutusuna yazılmasın
+  giriseDon();
+}
+document.addEventListener('keydown', gosteridenCik);
+document.addEventListener('pointerdown', gosteridenCik);
+
+// Giriş ekranı boş kalırsa gösteri başlar. Sonuç ekranı kendiliğinden kapanmaz: oyuncu fotoğrafını
+// çekebilsin diye "Sıradaki yarışmacı" düğmesine basılana kadar durur.
+function bostayiSifirla() {
+  clearTimeout(bostaZamanlayici);
+  if (!GOSTERI_BEKLEME_SN) return;
+  bostaZamanlayici = setTimeout(() => {
+    if (durum === 'giris' && $('yonetim').hidden) gosteriBaslat();
+    else bostayiSifirla();
+  }, GOSTERI_BEKLEME_SN * 1000);
+}
+['keydown', 'pointerdown', 'pointermove', 'input'].forEach((olay) => document.addEventListener(olay, bostayiSifirla));
+
+// KART LOGOSU: indirilen kart görseline basılan logo; logo.png'nin 320 piksele küçültülüp dosyaya
+// gömülmüş kopyasıdır. Sayfa çift tıklanarak (file://) açıldığında tarayıcı, dosyadan yüklenen bir
+// görselin çizildiği tuvali dışa vermez; gömülü görselde bu engel yoktur. Logo değişirse yeni logoyu
+// küçültüp base64'e çevirerek bu satırı yenile.
+const KART_LOGO = 'data:image/webp;base64,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';
+const kartLogo = new Image();
+kartLogo.src = KART_LOGO;
+
+// SPONSOR LOGOSU: sponsorun logosu, gömülü olarak (bkz. AYARLAR'da SPONSOR). Sayfadaki sponsor
+// alanlarında ve sonuç kartında bu kullanılır. Sponsor değişirse yeni logodan yeniden üretilmeli.
+const SPONSOR_LOGO = 'data:image/webp;base64,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';
+const sponsorLogo = new Image();
+sponsorLogo.src = SPONSOR_LOGO;
+
+// Sponsor alanları: SPONSOR_ADI boşsa hepsi gizli kalır
+document.body.classList.toggle('sponsorlu', Boolean(SPONSOR_ADI));
+document.querySelectorAll('[data-sponsor]').forEach((el) => { el.hidden = !SPONSOR_ADI; });
+document.querySelectorAll('[data-sponsor-logo]').forEach((img) => { img.src = SPONSOR_LOGO; img.alt = SPONSOR_ADI; img.hidden = !SPONSOR_LOGO; });
+document.querySelectorAll('[data-sponsor-ad]').forEach((el) => { el.textContent = SPONSOR_ADI; });
+$('sponsorOdul').textContent = SPONSOR_ODUL;
+$('davetYazi').textContent = 'Başlamak için bir tuşa bas. ' + (SPONSOR_ADI ? SPONSOR_ODUL + '.' : 'En hızlı üç kişi ödül alır.');
+
+sekmeDongusu();
+giriseDon();
+</script>
+</body>
+</html>

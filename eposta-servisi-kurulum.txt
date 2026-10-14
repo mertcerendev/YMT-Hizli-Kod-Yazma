@@ -1,0 +1,198 @@
+LOGOYU KODLA - E-POSTA VE KAYIT SERVİSİ
+=======================================
+
+Bu dosya ne işe yarar?
+  index.html tek başına e-posta gönderemez: çift tıklanıp açılan bir sayfa posta kutusuna giriş
+  yapamaz. Aşağıdaki küçük kod topluluğun Gmail hesabında çalışır; yönetim panelindeki "Gönder"
+  düğmesi kartı ona yollar, o da kartı ekte olacak şekilde oyuncunun adresine e-posta atar.
+  E-posta topluluğun hesabından gider. Kurulum bir kez yapılır ve yaklaşık 10 dakika sürer.
+
+  Aynı kod ikinci bir iş daha yapar (index.html'de BULUT_YEDEGI açıkken): oynanan her oyunu, topluluğun
+  Google hesabındaki "Logoyu Kodla kayıtları" tablosuna bir satır olarak yazar. Tablo ilk yazımda
+  kendiliğinden oluşur ve Drive'da görünür. Satırlar oyundan silinse de tabloda kalır: bilgisayara ya da
+  tarayıcıya bir şey olursa oynayanların listesi orada durur.
+
+Bilmen gerekenler
+  - Gönderim sırasında internet gerekir. Stantta internet yoksa kartları akşam, internet olan bir
+    yerde aynı bilgisayardan (aynı tarayıcıdan) panelden gönderebilirsin; kayıtlar yerinde durur.
+  - Ücretsiz Gmail hesabı günde yaklaşık 100 alıcıya gönderim yapabilir. Panel her gönderimden
+    sonra kalan hakkı yazar.
+  - Servisin adresini ve anahtarını bilen herkes topluluk hesabından e-posta attırabilir. Bu yüzden
+    anahtar yazılı index.html dosyasını internete koyma ve kimseyle paylaşma.
+
+
+KURULUM
+-------
+
+1. Tarayıcıda topluluğun Gmail hesabıyla oturum aç ve https://script.google.com adresine git.
+   "Yeni proje" (New project) düğmesine bas.
+
+2. Açılan kod alanındaki her şeyi sil. Bu dosyanın en altındaki "KOD" bölümünü olduğu gibi
+   kopyalayıp oraya yapıştır.
+
+3. Kodun başındaki ANAHTAR satırına kendi belirlediğin bir parola yaz. Tahmin edilemeyen, en az
+   20 karakterlik bir şey olsun (harf ve rakam). Örnek biçim:
+       const ANAHTAR = 'buraya-kendi-parolan';
+   Bu parolayı bir yere not et; 7. adımda index.html'e de aynısını yazacaksın.
+
+4. Üstteki disket simgesiyle kaydet. Projeye bir ad ver (ör. "Logoyu Kodla e-posta").
+   Sonra üstteki işlev listesinden "kurulum"u seçip "Çalıştır"a (Run) bas. Google izin ister (6. adımdaki
+   gibi onayla): istenen izinler senin adına e-posta göndermek ve tablolarını düzenlemektir. İzinden sonra
+   tablo oluşur.
+
+5. Sağ üstte "Dağıt" (Deploy) > "Yeni dağıtım" (New deployment):
+     - Tür seç (dişli simgesi): "Web uygulaması" (Web app)
+     - Şu kullanıcı olarak yürüt (Execute as): "Ben" (Me)
+     - Erişimi olanlar (Who has access): "Herkes" (Anyone)
+   "Dağıt" (Deploy) düğmesine bas.
+
+6. Google izin ister: "Erişimi yetkilendir" (Authorize access) > topluluk hesabını seç.
+   "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa: "Gelişmiş" (Advanced) >
+   "... projesine git (güvenli değil)" > "İzin ver" (Allow). İstenen izin, senin adına e-posta
+   göndermektir; uygulamayı sen yazdığın için uyarı beklenen bir şeydir.
+   Sonunda sana bir "Web uygulaması URL'si" verilir. Şuna benzer:
+       https://script.google.com/macros/s/AKfy.....uzun-bir-kod...../exec
+   Bu adresi kopyala.
+
+7. index.html dosyasını Not Defteri ile aç, AYARLAR bölümünde şu iki satırı bul ve doldur:
+       const EPOSTA_SERVISI = 'buraya 6. adımdaki adres';
+       const EPOSTA_ANAHTARI = 'buraya 3. adımdaki parola';
+   Kaydet ve sayfayı tarayıcıda yenile (F5).
+
+8. Dene: giriş ekranında e-posta alanına kendi adresini yazarak oyunu bir kez oyna. Sonra F2 ile
+   panele gir ve kendi satırındaki "Gönder" düğmesine bas. Birkaç saniye içinde düğme
+   "Gönderildi" olur ve kart gelen kutuna düşer. Düşmezse "Gereksiz" (Spam) klasörüne de bak.
+
+
+SIK KARŞILAŞILANLAR
+-------------------
+
+- Panel "Gönderilemedi (Anahtar yanlış.)" diyor: index.html'deki EPOSTA_ANAHTARI ile koddaki
+  ANAHTAR birebir aynı değil.
+
+- Panel "Gönderilemedi (Failed to fetch)" diyor: internet yok ya da EPOSTA_SERVISI adresi yanlış
+  kopyalanmış. Adres /exec ile bitmeli.
+
+- Panel "Gönderilemedi (Unexpected token ...)" diyor: 5. adımda "Erişimi olanlar" Herkes
+  seçilmemiş. "Dağıt" > "Dağıtımları yönet" (Manage deployments) > kalem simgesi ile düzelt.
+
+- Kodu sonradan değiştirdin (ör. parolayı): değişiklik kendiliğinden yayına girmez.
+  "Dağıt" > "Dağıtımları yönet" > kalem simgesi > Sürüm: "Yeni sürüm" (New version) > "Dağıt".
+  Adres aynı kalır.
+
+- E-postanın metnini, konusunu ya da altındaki imzayı değiştirmek için bu koda dokunma; onlar
+  index.html'deki EPOSTA_KONUSU, EPOSTA_MESAJI ve EPOSTA_IMZASI satırlarında.
+
+- E-postalar imzasız ve düz metin gidiyor: servisteki kod eski sürümde kalmış (imzayı taşıyan
+  "mesajHtml" satırları yok). Aşağıdaki KOD'u yeniden yapıştır (parolanı yazmayı unutma), sonra
+  "Dağıt" > "Dağıtımları yönet" > kalem simgesi > Sürüm: "Yeni sürüm" > "Dağıt".
+
+- Panel "Google tablosuna yazılmayı bekleyen ... oyun var" diyor: internet yoksa beklenen bir şeydir;
+  bağlantı gelince kendiliğinden gönderilir. Parantez içinde bir hata yazıyorsa (ör. "izin", "permission",
+  "Authorization"): koddaki "kurulum" işlevi hiç çalıştırılmamış ya da kod yenilendikten sonra yeni sürüm
+  dağıtılmamış. 4. adımdaki "kurulum"u çalıştır, sonra "Dağıt" > "Dağıtımları yönet" > kalem simgesi >
+  Sürüm: "Yeni sürüm" > "Dağıt".
+
+- Tabloyu bulamıyorum: topluluk hesabıyla https://drive.google.com adresinde "Logoyu Kodla kayıtları"
+  diye ara. Tabloyu silersen servis bir sonraki oyunda yenisini oluşturur.
+
+- Servisi kapatmak için: "Dağıt" > "Dağıtımları yönet" > "Arşivle" (Archive). index.html'de
+  EPOSTA_SERVISI'ni yeniden boş bırakırsan "Gönder" düğmesi Gmail'de hazır taslak açmaya döner.
+
+
+KOD (buradan aşağısını kopyala)
+-------------------------------
+
+// Logoyu Kodla - e-posta ve kayıt servisi (Google Apps Script)
+// index.html'den gelen iki tür isteği karşılar:
+//  - kart e-postası: yönetim panelinden gelen kartı, ekte olacak şekilde oyuncuya e-postayla yollar
+//  - kayıt (tur: 'kayit'): oynanan her oyunu "Logoyu Kodla kayıtları" adlı Google tablosuna bir satır olarak yazar
+
+// index.html'deki EPOSTA_ANAHTARI ile birebir aynı olmalı. Kendi parolanı yaz.
+const ANAHTAR = 'buraya-kendi-parolan';
+
+// E-postada gönderen adı olarak görünen yazı
+const GONDEREN_ADI = 'Yazılım Mühendisliği Topluluğu';
+
+// Oyunların yazıldığı tablo: ilk kayıtta kendiliğinden oluşturulur (Drive'da bu adla görünür)
+const TABLO_ADI = 'Logoyu Kodla kayıtları';
+// Tablonun sütunları; index.html'deki bulutaEkle satırları bu sırayla gönderir
+const BASLIKLAR = ['Kimlik', 'Tarih', 'Öğrenci No', 'Ad', 'Soyad', 'E-posta', 'Bölüm', 'Üye', 'Deneme', 'Durum', 'Süre (sn)', 'Tamamlanan (%)', 'WPM', 'Hata'];
+
+function doPost(e) {
+  try {
+    const istek = JSON.parse(e.postData.contents);
+    if (istek.anahtar !== ANAHTAR) return cevap({ ok: false, hata: 'Anahtar yanlış.' });
+    if (istek.tur === 'kayit') return cevap({ ok: true, yazilan: satirlariYaz(istek.satirlar) });
+    const eposta = {
+      to: istek.kime,
+      subject: istek.konu,
+      body: istek.mesaj,
+      name: GONDEREN_ADI,
+      attachments: [Utilities.newBlob(Utilities.base64Decode(istek.gorsel), 'image/jpeg', istek.dosyaAdi)],
+    };
+    // mesajHtml: mesajın biçimli, altında topluluk imzası olan hâli. Varsa e-posta programları bunu gösterir.
+    if (istek.mesajHtml) eposta.htmlBody = istek.mesajHtml;
+    MailApp.sendEmail(eposta);
+    // kalan: bugün gönderilebilecek e-posta sayısı
+    return cevap({ ok: true, kalan: MailApp.getRemainingDailyQuota() });
+  } catch (hata) {
+    return cevap({ ok: false, hata: String(hata) });
+  }
+}
+
+function cevap(veri) {
+  return ContentService.createTextOutput(JSON.stringify(veri)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Tablonun ilk sayfası. Tablo yoksa (ya da silinmişse) oluşturulur; kimliği projenin özelliklerinde saklanır.
+function sayfa() {
+  const ozellikler = PropertiesService.getScriptProperties();
+  let tablo = null;
+  try {
+    tablo = SpreadsheetApp.openById(ozellikler.getProperty('TABLO'));
+  } catch (hata) {
+    // henüz oluşturulmamış ya da silinmiş
+  }
+  if (!tablo) {
+    tablo = SpreadsheetApp.create(TABLO_ADI);
+    ozellikler.setProperty('TABLO', tablo.getId());
+    ozellikler.deleteProperty('BICIM');
+    tablo.getSheets()[0].setName('Oyunlar').appendRow(BASLIKLAR).setFrozenRows(1);
+  }
+  const ilk = tablo.getSheets()[0];
+  // Biçim tabloya bir kez uygulanır: Türkiye saati, tarih sütununda gün ve saat, öğrenci numarası yazı olarak
+  // (baştaki sıfır düşmesin). Yerel ayar değişmezse yazım yine de sürer.
+  if (ozellikler.getProperty('BICIM') !== '1') {
+    tablo.setSpreadsheetTimeZone('Europe/Istanbul');
+    try { tablo.setSpreadsheetLocale('tr_TR'); } catch (hata) { /* tarih biçimi aşağıda ayrıca veriliyor */ }
+    ilk.getRange('B:B').setNumberFormat('dd.MM.yyyy HH:mm:ss');
+    ilk.getRange('C:C').setNumberFormat('@');
+    ozellikler.setProperty('BICIM', '1');
+  }
+  return ilk;
+}
+
+// Gelen satırları tablonun sonuna ekler; kimliği (ilk sütun) tabloda olan satır yeniden yazılmaz.
+// Yazılan satır sayısını döndürür.
+function satirlariYaz(satirlar) {
+  const kilit = LockService.getScriptLock();
+  kilit.waitLock(20000);   // iki bilgisayar aynı anda yazarsa sırayla
+  try {
+    const s = sayfa();
+    const son = s.getLastRow();
+    const varolan = son > 1 ? s.getRange(2, 1, son - 1, 1).getValues().map((satir) => satir[0]) : [];
+    const yeni = satirlar.filter((satir) => varolan.indexOf(satir[0]) < 0)
+      .map((satir) => BASLIKLAR.map((_, i) => (i === 1 ? new Date(satir[i]) : satir[i] === undefined ? '' : satir[i])));
+    if (yeni.length) s.getRange(son + 1, 1, yeni.length, BASLIKLAR.length).setValues(yeni);
+    return yeni.length;
+  } finally {
+    kilit.releaseLock();
+  }
+}
+
+// KURULUM: bu kodu yapıştırdıktan sonra bir kez çalıştır (üstteki işlev listesinden "kurulum" > "Çalıştır").
+// Google, tabloya yazma iznini sorar; izin verince tablo oluşturulur ve adresi günlüğe yazılır.
+function kurulum() {
+  Logger.log(sayfa().getParent().getUrl());
+}

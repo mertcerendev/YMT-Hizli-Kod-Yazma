@@ -1,0 +1,3 @@
+# index.html depoya girerken EPOSTA_SERVISI ve EPOSTA_ANAHTARI boşaltılır (bilgisayardaki dosya değişmez).
+# Filtre .git/config'te tanımlıdır: git config filter.gizli.clean "sed -E ..."
+index.html filter=gizli
